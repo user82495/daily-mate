@@ -6,3 +6,6 @@ lichess_db_puzzle.csv.zst
 
 node_modules/
 .DS_Store
+
+# Local dev-server config for Claude Code, not part of the project
+.claude/launch.json
