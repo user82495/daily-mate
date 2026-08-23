@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0E0F13">
+  <meta name="description" content="One forced mate a day. Three attempts.">
+  <title>Daily Mate</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1 class="wordmark">Daily<span>Mate</span></h1>
+      <span class="puzzle-no" id="puzzle-no"></span>
+    </header>
+
+    <div class="prompt">
+      <span class="mate-in" id="mate-in"></span>
+      <span class="to-move" id="to-move"></span>
+    </div>
+
+    <div class="board-wrap">
+      <div id="board"></div>
+    </div>
+
+    <div class="tray">
+      <div class="attempts" id="attempts" role="status" aria-label="Attempts">
+        <span class="attempt" data-state="unused"></span>
+        <span class="attempt" data-state="unused"></span>
+        <span class="attempt" data-state="unused"></span>
+      </div>
+      <p class="progress" id="progress" role="status" aria-live="polite"></p>
+      <p class="message" id="message" role="status" aria-live="polite"></p>
+    </div>
+
+    <footer class="credit">
+      Puzzles from the
+      <a href="https://database.lichess.org/" target="_blank" rel="noopener">Lichess
+      open puzzle database</a> (CC0).
+      <br>
+      Pieces: <a href="https://github.com/chupinmaxime/mpchess-pieces" target="_blank" rel="noopener">mpchess</a>
+      by Maxime Chupin (GPLv3).
+      <br>
+      Daily Mate is free software under the
+      <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPLv3</a>.
+    </footer>
+  </main>
+
+  <!-- Stats screen. Shown once the day's puzzle is over. -->
+  <section class="sheet" id="sheet" hidden aria-labelledby="sheet-title">
+    <div class="sheet-inner">
+      <button class="sheet-close" id="sheet-close" type="button" aria-label="Close">×</button>
+
+      <h2 class="sheet-title" id="sheet-title"></h2>
+      <p class="sheet-note" id="streak-saved" hidden>streak saved</p>
+      <p class="solve-rate" id="solve-rate" hidden></p>
+
+      <div class="stats" id="stats">
+        <div class="stat"><span class="stat-value" id="st-played">0</span><span class="stat-label">Played</span></div>
+        <div class="stat"><span class="stat-value" id="st-rate">0</span><span class="stat-label">Solved %</span></div>
+        <div class="stat"><span class="stat-value" id="st-streak">0</span><span class="stat-label">Current streak</span></div>
+        <div class="stat"><span class="stat-value" id="st-max">0</span><span class="stat-label">Max streak</span></div>
+      </div>
+
+      <h3 class="hist-title">Attempts used</h3>
+      <div class="hist" id="hist"></div>
+
+      <div class="sheet-actions">
+        <div class="countdown">
+          <span class="countdown-label">Next puzzle in</span>
+          <span class="countdown-value" id="countdown">—</span>
+        </div>
+        <button class="share-btn" id="share" type="button">Share</button>
+      </div>
+      <p class="share-status" id="share-status" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

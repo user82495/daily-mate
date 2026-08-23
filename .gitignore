@@ -1,0 +1,8 @@
+# Lichess open puzzle database — ~900MB uncompressed, regenerate with:
+#   curl -L -O https://database.lichess.org/lichess_db_puzzle.csv.zst
+# Never commit it. puzzles.js (the generated subset) IS committed.
+lichess_db_puzzle.csv
+lichess_db_puzzle.csv.zst
+
+node_modules/
+.DS_Store
