@@ -1,0 +1,23 @@
+# Daily Mate on Netlify.
+#
+# The game is still exactly what is in the repository — no build step, publish
+# the root. The functions exist only for analytics: they hold the Supabase
+# credentials and the dashboard key so that neither ever reaches a browser.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# /api/track, /api/day-stats, /api/dashboard-data
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# The dashboard shell carries no data, but there is no reason for it to be in
+# an index either.
+[[headers]]
+  for = "/dashboard.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"

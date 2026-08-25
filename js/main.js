@@ -8,6 +8,7 @@ import { PUZZLES } from '../puzzles.js';
 import { puzzleFor, dayNumber, countdownText, msUntilTomorrow } from './daily.js';
 import { load, save, reset, todayRecord, commitResult } from './storage.js';
 import { shareText, share } from './share.js';
+import { reportResult, fetchDayStats } from './analytics.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -132,6 +133,10 @@ function finish(solved, results) {
       solved,
       attemptsUsed: results.length,
     });
+    // The one thing Daily Mate sends anywhere, and the only place it is sent
+    // from. Guarded by the same flag as the local commit, so it happens once
+    // per day whatever else the player does with the tab.
+    reportResult({ day, solved, attemptsUsed: results.length });
   }
   persist();
 
@@ -153,6 +158,7 @@ function persist() {
 /* -------------------------------------------------------------- the sheet */
 
 function openSheet() {
+  ensureDayStats();
   renderSheet();
   $('sheet').hidden = false;
   requestAnimationFrame(() => $('sheet').classList.add('is-open'));
@@ -165,6 +171,39 @@ function closeSheet() {
   setTimeout(() => { $('sheet').hidden = true; }, 220);
 }
 
+/* --------------------------------------------------------------- solve rate
+ * "63% of players solved today's puzzle."
+ *
+ * undefined -> not asked yet; null -> asked, nothing to show. The server keeps
+ * the number to itself until at least 20 people have played, so a null covers
+ * both "too early" and "could not reach it" and the line simply stays hidden.
+ * Nothing here is ever guessed or interpolated.
+ */
+
+let dayStats;
+
+function ensureDayStats() {
+  // A ?dev=1 jump is showing some other day's puzzle; today's rate would be a
+  // lie against it. Never ask, never show.
+  if (devIndex !== null || dayStats !== undefined) return;
+  dayStats = null;
+  fetchDayStats(day).then((stats) => {
+    dayStats = stats;
+    renderSolveRate();
+  });
+}
+
+function renderSolveRate() {
+  const el = $('solve-rate');
+  const rate = dayStats?.solveRate;
+  if (rate === null || rate === undefined) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  el.textContent = `${rate}% of players solved today's puzzle.`;
+}
+
 function renderSheet() {
   const solved = today.state === 'solved';
   $('sheet-title').textContent = solved
@@ -175,16 +214,7 @@ function renderSheet() {
 
   $('streak-saved').hidden = !today.streakSaved;
 
-  // SOLVE RATE — read from the puzzle's own data. Real numbers would be fetched
-  // from an aggregation endpoint at build time and baked into puzzles.js; the
-  // line stays hidden while solveRate is null so nothing is ever fabricated.
-  const rateEl = $('solve-rate');
-  if (puzzle.solveRate === null || puzzle.solveRate === undefined) {
-    rateEl.hidden = true;
-  } else {
-    rateEl.hidden = false;
-    rateEl.textContent = `${puzzle.solveRate}% of players solved today's puzzle.`;
-  }
+  renderSolveRate();
 
   $('st-played').textContent = state.played;
   $('st-rate').textContent = state.played

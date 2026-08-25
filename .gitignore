@@ -9,3 +9,9 @@ node_modules/
 
 # Local dev-server config for Claude Code, not part of the project
 .claude/launch.json
+
+# Rendered shorts — regenerate with:  python3 puzzleshorts.py
+videos/
+
+# Netlify's local build/deploy state
+.netlify/

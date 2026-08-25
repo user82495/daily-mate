@@ -3,15 +3,17 @@
  *
  * The whole app is a fixed set of static files, so the service worker simply
  * precaches all of them on install and serves cache-first afterwards. There is
- * no runtime data to fetch: puzzles ship inside puzzles.js and every scrap of
- * player state lives in localStorage, so once installed the game works with no
- * network at all.
+ * Almost no runtime data is fetched: puzzles ship inside puzzles.js and every
+ * scrap of player state lives in localStorage, so once installed the game
+ * works with no network at all. The two analytics calls under /api/ are the
+ * exception, and they are deliberately excluded below — a cached solve rate
+ * would be a wrong solve rate, and a cached POST is not a thing we want.
  *
  * Bump CACHE when any shipped file changes — the old cache is then dropped on
  * activate, and clients pick the new one up on their next load.
  */
 
-const CACHE = 'dailymate-v9';
+const CACHE = 'dailymate-v10';
 
 const ASSETS = [
   './',
@@ -26,6 +28,9 @@ const ASSETS = [
   'js/daily.js',
   'js/storage.js',
   'js/share.js',
+  'js/analytics.js',
+  'privacy.html',
+  'prose.css',
   'vendor/chess.js',
   'icons/icon.svg',
   'icons/icon-192.png',
@@ -57,6 +62,11 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return; // never touch cross-origin
+
+  // Analytics and the dashboard are live data. Note that the lookup below uses
+  // ignoreSearch, so a cached /api/day-stats?day=1 would be served for every
+  // other day too — leave the network to handle these entirely.
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/dashboard')) return;
 
   event.respondWith(
     caches.match(request, { ignoreSearch: true }).then((hit) => {

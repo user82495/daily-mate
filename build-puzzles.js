@@ -274,9 +274,6 @@ async function main() {
         fen: result.fen,
         solution: result.solution,
         mateIn,
-        // Real solve rates would be fetched from an aggregation endpoint and
-        // baked in on the next build. Nothing fabricated in the meantime.
-        solveRate: null,
         rating: record.rating,
       });
     }
@@ -302,7 +299,6 @@ async function main() {
     `    fen: ${JSON.stringify(p.fen)},\n` +
     `    solution: ${JSON.stringify(p.solution)},\n` +
     `    mateIn: ${p.mateIn},\n` +
-    `    solveRate: ${p.solveRate === null ? 'null' : p.solveRate},\n` +
     `    rating: ${p.rating},\n` +
     '  },'
   )).join('\n');
@@ -322,8 +318,6 @@ async function main() {
  *   solution  remaining moves in SAN, player and opponent alternating,
  *             starting and ending with the player
  *   mateIn    number of player moves to mate
- *   solveRate percentage of players who solved it, or null when unknown.
- *             The stats screen hides the line entirely while this is null.
  *   rating    Lichess difficulty rating; kept for reference, never shown
  *
  * Generated ${new Date().toISOString().slice(0, 10)} from lichess_db_puzzle.csv

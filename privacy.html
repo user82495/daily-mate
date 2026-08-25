@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0E0F13">
+  <meta name="description" content="What Daily Mate collects: an anonymous device ID and puzzle results. Nothing else.">
+  <title>Privacy · Daily Mate</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="prose.css">
+</head>
+<body>
+  <main class="app prose">
+    <header class="topbar">
+      <h1 class="wordmark"><a href="index.html">Daily<span>Mate</span></a></h1>
+      <span class="puzzle-no">Privacy</span>
+    </header>
+
+    <h2>The short version</h2>
+
+    <p>
+      Daily Mate stores a random number on your device and records, once a day,
+      whether you solved that day's puzzle and how many attempts it took. There
+      are no accounts, no personal data, and no third-party analytics of any
+      kind.
+    </p>
+
+    <h2>What is collected</h2>
+
+    <p>
+      When a puzzle ends — solved or not — the app sends exactly four values,
+      once, and never again for that day:
+    </p>
+
+    <dl class="fields">
+      <dt>Anonymous device ID</dt>
+      <dd>
+        A random UUID your browser generates for itself and keeps in
+        <code>localStorage</code>. It is not derived from anything about you or
+        your device, it is not shared with anyone, and it means nothing outside
+        Daily Mate's own database. It is created the first time you finish a
+        puzzle — if you open Daily Mate and never play, no ID is ever made.
+      </dd>
+
+      <dt>Puzzle day</dt>
+      <dd>Which day's puzzle it was, as a calendar date.</dd>
+
+      <dt>Result</dt>
+      <dd>Solved, or not solved.</dd>
+
+      <dt>Attempts used</dt>
+      <dd>One, two, or three.</dd>
+    </dl>
+
+    <p>
+      That is the complete list. It exists so that one person can see how many
+      people are playing and which puzzles turn out to be too hard.
+    </p>
+
+    <h2>What is not collected</h2>
+
+    <ul class="nope">
+      <li>No accounts, names, email addresses, or sign-in of any kind.</li>
+      <li>No IP addresses. They are not logged and are never stored.</li>
+      <li>No user agent, device model, screen size, or browser fingerprint.</li>
+      <li>No location, at any precision, including country.</li>
+      <li>No cookies. Nothing Daily Mate stores is sent as a cookie.</li>
+      <li>No page views, timings, scroll or click tracking, or session recording.</li>
+      <li>No record of your individual moves.</li>
+      <li>
+        No third-party analytics, advertising, tag managers, or embedded
+        trackers. Daily Mate loads no code from anyone else's server.
+      </li>
+      <li>
+        No cross-site tracking, and no way to do it: the anonymous ID exists on
+        this site only and follows you nowhere.
+      </li>
+    </ul>
+
+    <h2>Your stats stay on your device</h2>
+
+    <p>
+      Played, solved percentage, streaks, and the attempts histogram are
+      computed and stored entirely in your browser, under the
+      <code>localStorage</code> key <code>dailymate.v1</code>. None of it is
+      uploaded. The anonymous ID sits beside it under
+      <code>dailymate.anon.v1</code>.
+    </p>
+
+    <p>
+      Clearing your browser's site data for Daily Mate erases both: your stats
+      and streak are gone, and your next completed puzzle mints a brand new
+      anonymous ID with no link to the old one.
+    </p>
+
+    <h2>The one number that comes back</h2>
+
+    <p>
+      The stats screen can show a line like "63% of players solved today's
+      puzzle." That is a single aggregate figure, and it only appears once at
+      least twenty people have played that day. Asking for it sends no
+      identifier — not even the anonymous ID.
+    </p>
+
+    <h2>Where it is kept</h2>
+
+    <p>
+      The four values above are stored in a <a href="https://supabase.com"
+      target="_blank" rel="noopener">Supabase</a> database, reachable only by
+      the site's own server. Your browser never talks to it directly, which is
+      also why no request of yours is logged there. The site is hosted on
+      <a href="https://www.netlify.com" target="_blank" rel="noopener">Netlify</a>,
+      which necessarily handles your request in order to serve the page; Daily
+      Mate does not ask it for, use, or retain anything about it.
+    </p>
+
+    <h2>Data requests</h2>
+
+    <p>
+      There is nothing to look up. A record here is a random number and a
+      result, with no way to connect it to a person — including by the person
+      who runs Daily Mate. If you want your device's record gone, clear the
+      site's data in your browser: the ID it was filed under stops existing,
+      and what remains is an anonymous row that identifies nobody.
+    </p>
+
+    <h2>Changes</h2>
+
+    <p>
+      If what is collected ever changes, this page changes with it. Daily Mate
+      is <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank"
+      rel="noopener">free software</a> and unminified, so the code that does the
+      sending is readable in full — it is the file <code>js/analytics.js</code>,
+      and it is short.
+    </p>
+
+    <footer class="credit">
+      <a href="index.html">Back to the puzzle</a>
+    </footer>
+  </main>
+</body>
+</html>

@@ -6,7 +6,8 @@ One forced mate a day. Three attempts.
 
 A daily chess puzzle in the spirit of Wordle: everyone gets the same puzzle,
 the board tells you the mate length up front, and you get three tries. Solve it
-or don't — either way that's the day. No accounts, no backend, no archive.
+or don't — either way that's the day. No accounts, no archive, and nothing that
+identifies you.
 
 ## How it plays
 
@@ -30,11 +31,67 @@ play on — never walking into mate when there's an alternative.
 ## Stats
 
 Played, solved percentage, current and max streak, and a histogram of attempts
-used (1 / 2 / 3 / X). Everything lives in `localStorage` under `dailymate.v1`;
-nothing is sent anywhere.
+used (1 / 2 / 3 / X). Everything the player sees lives in `localStorage` under
+`dailymate.v1` and is computed on the device — none of it is uploaded.
 
 Streaks allow **one missed day per calendar month**. It applies silently, and
 the stats screen shows a small "streak saved" note when it rescues a run.
+
+The one figure that comes from elsewhere is "63% of players solved today's
+puzzle", which is fetched once when the stats sheet opens and stays hidden
+until at least twenty people have played that day. See Analytics below.
+
+## Analytics
+
+Anonymous, and small enough to describe in a sentence: once a day, when the
+puzzle ends, the app sends `{ anonId, puzzleDay, result, attemptsUsed }` and
+nothing else. `anonId` is a random UUID the browser mints for itself in
+`localStorage` under `dailymate.anon.v1`, the first time a puzzle is *finished*
+— a visitor who never plays is never given one and makes no request at all.
+
+No IP addresses, no user agents, no location, no cookies, no third-party
+scripts, no cross-site anything. `privacy.html` says the same thing to players,
+and `js/analytics.js` is the whole implementation.
+
+It is fire-and-forget in the strict sense — sent with `navigator.sendBeacon`,
+with nothing awaited and no retry. A play that fails to send is simply not
+counted; the game never notices, and neither does the player.
+
+The browser never talks to the database. Requests go to Netlify functions in
+`netlify/functions/`, which hold the credentials and forward only those four
+fields. That is a privacy decision as much as a security one: a direct
+browser-to-Supabase write would leave the player's IP in Supabase's own request
+logs, where we would neither want it nor control it.
+
+Storage is Postgres on Supabase. `supabase/schema.sql` is the whole setup — one
+table with `(anon_id, puzzle_day)` as its primary key, so "once per player per
+day" is enforced by the database rather than trusted from the client. Row level
+security is on with no policies and every grant revoked from `anon` and
+`authenticated`: the publishable key opens nothing. Only the service-role key,
+which lives in Netlify's environment, gets in.
+
+## The dashboard
+
+`dashboard.html` — daily active players, new vs returning, day-1 and day-7
+retention, solve rate per puzzle sorted hardest first, attempt and streak
+distributions, and total plays. Same dark theme and type as the game;
+[Chart.js](https://www.chartjs.org) is vendored at `vendor/chart.umd.min.js`
+and is never shipped to players.
+
+The page itself is public and ships empty — on static hosting it has to be. The
+guard is on `/api/dashboard-data`, which wants the `DASHBOARD_KEY` secret as a
+bearer token and compares it in constant time. Without the key it returns
+nothing; if the key is unset or under 24 characters it refuses to serve at all
+rather than falling open on a half-configured deploy. The URL is not a secret
+and is not treated as one. The key is typed in and kept in `sessionStorage`,
+so closing the tab locks it again.
+
+Aggregation happens in Postgres (`dm_dashboard()` and friends), so one request
+returns everything and no raw rows ever leave the database.
+
+One deliberate difference: the streak distribution counts **unbroken** runs of
+solves, with no forgiveness applied, so a player's own displayed streak can read
+higher than the bucket they fall into here.
 
 ## Running it locally
 
@@ -47,6 +104,15 @@ python3 -m http.server 5173
 
 Then open <http://localhost:5173>. A service worker is used, so it must be
 served over HTTP rather than opened as a `file://` URL.
+
+That serves static files only, so `/api/` returns 404 and the analytics calls
+fail — which is exactly what they are built to do, silently, with the solve-rate
+line staying hidden and the game unaffected. To exercise the functions and the
+dashboard locally you need the environment variables above and:
+
+```bash
+npx netlify dev
+```
 
 ### Dev flag
 
@@ -93,11 +159,29 @@ gives you that date's puzzle — you can't be served two in one local day.
 
 ## Deploying
 
-Static hosting, no build command. Publish the repository root.
+Static hosting, no build command. Publish the repository root. `netlify.toml`
+sets that up along with the functions and the `/api/*` route.
+
+Four environment variables, set in Netlify (Site configuration → Environment
+variables). None of them is ever sent to a browser:
+
+| Variable | What it is |
+|---|---|
+| `SUPABASE_URL` | Project URL, e.g. `https://abcd.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Service role**, not the publishable/anon key. Secret. |
+| `DASHBOARD_KEY` | Your own random secret for the dashboard. 32+ characters. |
+| `SOLVE_RATE_MIN_PLAYS` | Optional. The floor for showing the solve rate; defaults to 20. |
+
+Then run `supabase/schema.sql` once in the Supabase SQL editor.
+
+Without any of this the game still works: every analytics call fails quietly
+and the solve-rate line stays hidden.
 
 The service worker is cache-first, so returning visitors keep the old version
 until the cache name changes. **Bump `CACHE` in `sw.js` on every deploy that
-changes a shipped file** — it's at `dailymate-v9` now.
+changes a shipped file** — it's at `dailymate-v10` now. Anything under `/api/`
+is excluded from it deliberately: the cache lookup ignores query strings, so a
+cached `day-stats` response would be served for every other day too.
 
 ## Licence
 

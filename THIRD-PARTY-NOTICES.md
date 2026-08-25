@@ -14,7 +14,8 @@ based on it and inherits the same licence.
   "ASP loophole" does not apply here. Helpfully, Daily Mate ships unminified ES
   modules, so what the browser receives *is* the source — but you should still
   publish the repository and keep `LICENSE` alongside it.
-- **Keep the notices.** `LICENSE`, `vendor/mpchess/LICENSE`, and this file.
+- **Keep the notices.** `LICENSE`, `vendor/mpchess/LICENSE`,
+  `vendor/chart.js-LICENSE.md`, and this file.
 - **Downstream stays GPL.** Anyone redistributing or modifying it must do so
   under GPLv3 too.
 - **Commercial use is allowed.** GPL does not forbid charging money; it forbids
@@ -27,9 +28,10 @@ based on it and inherits the same licence.
 |---|---|---|---|---|
 | mpchess piece set | Maxime Chupin | GPL-3.0-or-later | is the source of it | `vendor/mpchess/LICENSE` |
 | chess.js | Jeff Hlywa | BSD-2-Clause | yes — permissive | header of `vendor/chess.js` |
+| Chart.js | Chart.js Contributors | MIT | yes — permissive | `vendor/chart.js-LICENSE.md` |
 | Lichess puzzle database | Lichess | CC0 1.0 | yes — public domain | credited in-app |
 
-No component conflicts with GPLv3. BSD-2-Clause and CC0 are both one-way
+No component conflicts with GPLv3. BSD-2-Clause, MIT and CC0 are all one-way
 compatible, meaning they can be combined into a GPL work.
 
 ### mpchess piece set — GPL-3.0-or-later
@@ -47,6 +49,18 @@ or `url(#..)` reference has crept in before emitting.
 
 Vendored at `vendor/chess.js` with its copyright notice and licence conditions
 intact at the top of the file.
+
+### Chart.js — MIT
+
+Chart.js 4.5.1, vendored at `vendor/chart.umd.min.js` from
+https://www.chartjs.org, with its licence at `vendor/chart.js-LICENSE.md`.
+
+Used **only by `dashboard.html`**, the private analytics page. It is not part
+of the game: no player ever downloads it, and it is deliberately left out of
+the service worker's precache list. This is the one file in the repository that
+is minified — it is a dependency rather than project source, and MIT asks only
+that the copyright notice travel with it, which it does both in the file's own
+header and in `vendor/chart.js-LICENSE.md`.
 
 ### Lichess open puzzle database — CC0 1.0
 

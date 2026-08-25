@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0E0F13">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Analytics · Daily Mate</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dash-body">
+
+  <!-- The lock. This page ships empty; the data lives behind /api/dashboard-data
+       and does not move without the key. -->
+  <section class="lock" id="lock" hidden>
+    <form class="lock-card" id="lock-form">
+      <h1 class="wordmark">Daily<span>Mate</span></h1>
+      <p class="lock-kicker">Analytics</p>
+      <label class="lock-label" for="key">Dashboard key</label>
+      <input class="lock-input" type="password" id="key" name="key"
+             autocomplete="current-password" spellcheck="false" required>
+      <button class="lock-btn" type="submit" id="unlock">Unlock</button>
+      <p class="lock-msg" id="lock-msg" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <main class="dash" id="dash" hidden>
+
+    <header class="dash-head">
+      <div>
+        <h1 class="wordmark">Daily<span>Mate</span></h1>
+        <p class="dash-kicker">Analytics</p>
+      </div>
+      <div class="dash-actions">
+        <span class="dash-stamp" id="stamp"></span>
+        <button class="ghost-btn" type="button" id="refresh">Refresh</button>
+        <button class="ghost-btn" type="button" id="lock-btn">Lock</button>
+      </div>
+    </header>
+
+    <!-- Shown instead of everything else while the table is empty. -->
+    <section class="card empty" id="empty" hidden>
+      <h2 class="card-title">Nothing recorded yet</h2>
+      <p class="card-note">
+        The first row arrives when someone finishes a puzzle. If you have played
+        today and this is still empty, check the Netlify function log for
+        <code>track</code>.
+      </p>
+    </section>
+
+    <div id="content" hidden>
+
+      <section class="tiles">
+        <div class="tile">
+          <span class="tile-value" id="t-plays">—</span>
+          <span class="tile-label">Total plays</span>
+        </div>
+        <div class="tile">
+          <span class="tile-value" id="t-players">—</span>
+          <span class="tile-label">Players all time</span>
+        </div>
+        <div class="tile">
+          <span class="tile-value" id="t-d1">—</span>
+          <span class="tile-label">Day-1 retention</span>
+        </div>
+        <div class="tile">
+          <span class="tile-value" id="t-d7">—</span>
+          <span class="tile-label">Day-7 retention</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Daily active players</h2>
+        <p class="card-note">One point per day. A player counts once, on the day they finished.</p>
+        <div class="chart-box"><canvas id="c-dau"></canvas></div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">New vs returning</h2>
+        <p class="card-note">New means it was that player's first ever puzzle.</p>
+        <div class="chart-box"><canvas id="c-mix"></canvas></div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Solve rate per puzzle</h2>
+        <p class="card-note">Hardest first. Days with few plays move about a lot — the count is in the tooltip.</p>
+        <div class="chart-box chart-box--tall" id="box-puzzles"><canvas id="c-puzzles"></canvas></div>
+      </section>
+
+      <div class="row">
+        <section class="card">
+          <h2 class="card-title">Attempts used</h2>
+          <p class="card-note">Every play ever recorded. X is all three spent.</p>
+          <div class="chart-box chart-box--short"><canvas id="c-attempts"></canvas></div>
+        </section>
+
+        <section class="card">
+          <h2 class="card-title">Current streaks</h2>
+          <p class="card-note">
+            Players on an unbroken run of solves reaching today or yesterday.
+            Counted strictly — the game's one-missed-day-a-month forgiveness is
+            not applied here, so a player's own streak can read higher.
+          </p>
+          <div class="chart-box chart-box--short"><canvas id="c-streaks"></canvas></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2 class="card-title">Retention by cohort</h2>
+        <p class="card-note">
+          Grouped by the day a player first appeared. A dash means the cohort is
+          not old enough to have had the chance yet; those are left out of the
+          headline figures above rather than counted as churn.
+        </p>
+        <div class="table-wrap">
+          <table class="cohorts">
+            <thead>
+              <tr>
+                <th>First played</th>
+                <th class="num">Players</th>
+                <th class="num">Came back day 1</th>
+                <th class="num">Came back day 7</th>
+              </tr>
+            </thead>
+            <tbody id="cohort-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <p class="dash-msg" id="dash-msg" role="status" aria-live="polite"></p>
+  </main>
+
+  <script src="vendor/chart.umd.min.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

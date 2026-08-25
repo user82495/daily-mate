@@ -1,0 +1,90 @@
+/* =========================================================================
+   prose.css — the reading pages (privacy.html).
+
+   Same tokens, same column, same quiet as the board screen; styles.css is
+   loaded first and this only adds what a page of text needs.
+   ========================================================================= */
+
+.prose {
+  padding-bottom: 40px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+.prose .wordmark a {
+  color: inherit;
+  text-decoration: none;
+}
+.prose .wordmark a span { color: var(--accent); }
+
+.prose h2 {
+  margin: 30px 0 10px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.prose h2:first-of-type { margin-top: 8px; }
+
+.prose p { margin: 0 0 14px; }
+
+.prose a {
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+.prose a:hover { border-bottom-color: var(--accent); }
+
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* The four collected fields, as a definition list. */
+.fields {
+  margin: 0 0 16px;
+  padding: 16px 16px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.fields dt {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+.fields dd {
+  margin: 4px 0 14px;
+  font-size: 13.5px;
+}
+
+.nope {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.nope li {
+  position: relative;
+  margin-bottom: 7px;
+  padding-left: 20px;
+  font-size: 13.5px;
+}
+/* An em dash rather than a tick: this is a list of absences. */
+.nope li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--text-faint);
+}
+
+.prose .credit {
+  padding-top: 30px;
+  font-size: 12px;
+}
