@@ -13,7 +13,13 @@
  * activate, and clients pick the new one up on their next load.
  */
 
-const CACHE = 'dailymate-v10';
+const CACHE = 'dailymate-v11';
+
+/**
+ * Everything the private dashboard is made of. None of it belongs in the app's
+ * offline cache: no player ever loads it, and a stale copy is worse than none.
+ */
+const DASHBOARD_ASSET = /^\/(dashboard\.\w+|js\/dashboard\.js|vendor\/chart\.)/;
 
 const ASSETS = [
   './',
@@ -66,7 +72,15 @@ self.addEventListener('fetch', (event) => {
   // Analytics and the dashboard are live data. Note that the lookup below uses
   // ignoreSearch, so a cached /api/day-stats?day=1 would be served for every
   // other day too — leave the network to handle these entirely.
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/dashboard')) return;
+  //
+  // The dashboard is more than dashboard.html: its script lives under /js/ and
+  // its chart library under /vendor/, and the runtime caching further down
+  // grabs any same-origin GET that succeeds. Matching only the "/dashboard"
+  // prefix let js/dashboard.js be cached and then served cache-first for as
+  // long as CACHE stayed the same — pinning the page to whichever version a
+  // browser happened to see first. Match every dashboard asset, not just the
+  // page.
+  if (url.pathname.startsWith('/api/') || DASHBOARD_ASSET.test(url.pathname)) return;
 
   event.respondWith(
     caches.match(request, { ignoreSearch: true }).then((hit) => {
