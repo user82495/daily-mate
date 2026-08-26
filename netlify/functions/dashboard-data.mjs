@@ -40,7 +40,7 @@ import { rpc, json } from './lib/supabase.mjs';
  * A long random string never does. The strength lives in the password, not
  * here.
  */
-const DASHBOARD_PASSWORD_SHA256 = 'REPLACE_ME_WITH_A_REAL_HASH';
+const DASHBOARD_PASSWORD_SHA256 = 'fef5c05894033d9b547c4c56eef95d48071dcbd8b6908102f3294b96735e85c8';
 
 /** A SHA-256 digest as hex: exactly 64 characters, nothing else. */
 const HASH_SHAPE = /^[0-9a-f]{64}$/i;
