@@ -378,13 +378,14 @@ async function fetchData(key) {
   }
 
   if (res.status === 401) throw new KeyRejected('That key was not accepted.');
+  // The password is a constant in the function now, so there is no
+  // "unconfigured" state for the server to report. Kept as a safety net.
   if (res.status === 503) {
-    throw new Error(
-      'DASHBOARD_KEY is not set on the site, or is shorter than 24 characters.'
-    );
+    throw new Error('The dashboard is not configured on the server.');
   }
   if (res.status === 502) {
-    throw new Error('The server could not reach Supabase. Check the function log.');
+    const detail = await res.json().then((b) => b.detail).catch(() => undefined);
+    throw Object.assign(new Error('The server could not reach Supabase.'), { detail });
   }
   if (!res.ok) throw new Error(`The server answered ${res.status}.`);
 
@@ -410,13 +411,37 @@ function storeKey(key) {
   }
 }
 
-function showLock(message = '') {
+function showLock(message = '', detail) {
   $('dash').hidden = true;
   $('lock').hidden = false;
   $('lock-msg').textContent = message;
   $('unlock').disabled = false;
   $('key').value = '';
   $('key').focus();
+  renderDetail(detail);
+}
+
+/**
+ * The "why" under a failure message.
+ *
+ * Only the 502 path carries one — by then the key has been accepted, so the
+ * server can afford to be specific about what Supabase said. The 401 and 503
+ * paths deliberately say nothing beyond their status: whoever is looking at
+ * them has not proved they should be told anything.
+ */
+function renderDetail(detail) {
+  const el = $('lock-detail');
+  if (!detail) { el.hidden = true; el.textContent = ''; return; }
+
+  el.textContent = [
+    `-> ${detail.hint}`,
+    '',
+    `supabase env seen  ${detail.supabaseEnvSeen.join(', ') || '(neither is set)'}`,
+    '',
+    'raw upstream reply:',
+    detail.upstream,
+  ].join('\n');
+  el.hidden = false;
 }
 
 function showDash() {
@@ -438,6 +463,7 @@ async function load(key, { onError }) {
       showLock(err.message);
       return false;
     }
+    renderDetail(err.detail);
     onError(err.message);
     return false;
   }
@@ -452,6 +478,7 @@ $('lock-form').addEventListener('submit', async (event) => {
 
   $('unlock').disabled = true;
   $('lock-msg').textContent = '';
+  renderDetail(undefined);
 
   const ok = await load(key, { onError: (msg) => { $('lock-msg').textContent = msg; } });
   if (ok) storeKey(key);

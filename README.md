@@ -79,12 +79,30 @@ distributions, and total plays. Same dark theme and type as the game;
 and is never shipped to players.
 
 The page itself is public and ships empty — on static hosting it has to be. The
-guard is on `/api/dashboard-data`, which wants the `DASHBOARD_KEY` secret as a
-bearer token and compares it in constant time. Without the key it returns
-nothing; if the key is unset or under 24 characters it refuses to serve at all
-rather than falling open on a half-configured deploy. The URL is not a secret
-and is not treated as one. The key is typed in and kept in `sessionStorage`,
-so closing the tab locks it again.
+guard is on `/api/dashboard-data`, which wants a password as a bearer token and
+compares it in constant time. The URL is not a secret and is not treated as one.
+The password is typed in and kept in `sessionStorage`, so closing the tab locks
+it again.
+
+The password is not in the repository. `netlify/functions/dashboard-data.mjs`
+holds only its SHA-256 digest in `DASHBOARD_PASSWORD_SHA256`; the submitted
+password is hashed on the server and the two digests compared in constant time.
+A malformed digest refuses to serve rather than falling open.
+
+To set or change it:
+
+```bash
+node make-hash.js          # type the password, press Ctrl-D
+```
+
+and paste the hex over the constant. `make-hash.js` is a local tool — never
+imported by the site, never deployed, and it writes nothing to disk.
+
+One caveat worth stating plainly: a bare SHA-256 keeps the plaintext out of the
+repo, but it is not a slow password hash, and this repository is public. An
+attacker has the digest and can grind it offline. A dictionary word with digits
+on the end will not survive that; a long random string will. Generate one with
+`openssl rand -base64 24`.
 
 Aggregation happens in Postgres (`dm_dashboard()` and friends), so one request
 returns everything and no raw rows ever leave the database.
@@ -169,7 +187,6 @@ variables). None of them is ever sent to a browser:
 |---|---|
 | `SUPABASE_URL` | Project URL, e.g. `https://abcd.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Service role**, not the publishable/anon key. Secret. |
-| `DASHBOARD_KEY` | Your own random secret for the dashboard. 32+ characters. |
 | `SOLVE_RATE_MIN_PLAYS` | Optional. The floor for showing the solve rate; defaults to 20. |
 
 Then run `supabase/schema.sql` once in the Supabase SQL editor.

@@ -81,6 +81,21 @@
   color: var(--fail);
 }
 
+/* Why a failure happened, when the server is willing to say. */
+.lock-detail {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-dim);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
 /* =========================================================================
    Shell
    ========================================================================= */

@@ -15,3 +15,10 @@ videos/
 
 # Netlify's local build/deploy state
 .netlify/
+
+# Local-only analytics dashboard. Holds the Supabase service role key in
+# plain text, so it must never be committed and must never be deployed.
+# The folder rule covers everything inside it; the config line below is
+# belt and braces, so a moved or copied config still cannot slip through.
+local-dashboard/
+**/local-dashboard-config.js

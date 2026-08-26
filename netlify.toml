@@ -8,6 +8,16 @@
   publish = "."
   functions = "netlify/functions"
 
+# The local-only dashboard must never be served. It is gitignored, so a normal
+# git-triggered build never sees it — but `netlify deploy` from the CLI uploads
+# the working directory including untracked files, and that folder holds the
+# service role key. This rule makes the path 404 regardless of how it got here.
+# It is listed first so nothing later can shadow it.
+[[redirects]]
+  from = "/local-dashboard/*"
+  to = "/index.html"
+  status = 404
+
 # /api/track, /api/day-stats, /api/dashboard-data
 [[redirects]]
   from = "/api/*"
