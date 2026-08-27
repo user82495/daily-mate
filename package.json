@@ -1,5 +1,14 @@
 {
   "dependencies": {
-    "chess.js": "^1.4.0"
+    "chess.js": "^1.4.0",
+    "web-push": "^3.6.7"
+  },
+  "private": true,
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.71.0"
+  },
+  "scripts": {
+    "explanations": "node scripts/generate_explanations.js",
+    "puzzles": "node build-puzzles.js --count 30 --seed 20260101"
   }
 }

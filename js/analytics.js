@@ -8,15 +8,15 @@
  *
  *   { anonId, puzzleDay, result, attemptsUsed }
  *
- *   anonId        random UUID, generated in this browser, stored in
- *                 localStorage, meaningless anywhere else
+ *   anonId        the device's random UUID (see js/player.js) — generated in
+ *                 this browser, stored in localStorage, meaningless elsewhere
  *   puzzleDay     the local day number the puzzle belongs to
  *   result        "solved" | "failed"
  *   attemptsUsed  1, 2 or 3
  *
- * That is the complete list. No page views, no timings, no move-by-move
- * record, no third-party script, nothing that identifies a person or a device
- * beyond that one random number. See privacy.html.
+ * That is the complete list *for this endpoint*. The stats, percentile and
+ * push features added later send more, from js/api.js, and only when the
+ * player uses them. privacy.html describes the whole picture.
  *
  * ---------------------------------------------------------------------------
  * HOW IT BEHAVES
@@ -28,43 +28,10 @@
  * error either — it just means no ID, and therefore nothing is sent.
  */
 
-const ID_KEY = 'dailymate.anon.v1';
+import { playerId, ID_KEY } from './player.js';
 
 const ENDPOINT_TRACK = '/api/track';
 const ENDPOINT_DAY = '/api/day-stats';
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-/** crypto.randomUUID needs a secure context; this covers plain-HTTP dev. */
-function uuid() {
-  if (crypto.randomUUID) return crypto.randomUUID();
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
-  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
-  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-/**
- * The device's anonymous ID, minted on first use.
- *
- * Called only when a puzzle is actually finished, so someone who opens Daily
- * Mate and walks away is never given an identifier at all.
- *
- * @returns {string|null} null when storage is unavailable.
- */
-function anonId() {
-  try {
-    const existing = localStorage.getItem(ID_KEY);
-    if (existing && UUID_RE.test(existing)) return existing;
-    const fresh = uuid();
-    localStorage.setItem(ID_KEY, fresh);
-    return fresh;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Record a finished puzzle. Call once, at the moment the day ends.
@@ -75,7 +42,7 @@ function anonId() {
  */
 export function reportResult({ day, solved, attemptsUsed }) {
   try {
-    const id = anonId();
+    const id = playerId();
     if (!id) return;
 
     const body = JSON.stringify({

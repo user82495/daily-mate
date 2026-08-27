@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0E0F13">
+  <meta name="robots" content="noindex">
+  <title>Your stats — Daily Mate</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1 class="wordmark">Daily<span>Mate</span></h1>
+      <a class="icon-link" href="./" aria-label="Back to today's puzzle" title="Back to the puzzle">←</a>
+    </header>
+
+    <h2 class="page-title">Your stats</h2>
+
+    <div class="stats" id="stats">
+      <div class="stat"><span class="stat-value" id="ps-played">—</span><span class="stat-label">Played</span></div>
+      <div class="stat"><span class="stat-value" id="ps-rate">—</span><span class="stat-label">Win %</span></div>
+      <div class="stat"><span class="stat-value" id="ps-streak">—</span><span class="stat-label">Current streak</span></div>
+      <div class="stat"><span class="stat-value" id="ps-max">—</span><span class="stat-label">Max streak</span></div>
+    </div>
+
+    <div class="stats stats-secondary">
+      <div class="stat"><span class="stat-value" id="ps-avg">—</span><span class="stat-label">Average solve</span></div>
+      <div class="stat"><span class="stat-value" id="ps-freezes">—</span><span class="stat-label">Freezes left</span></div>
+    </div>
+
+    <p class="stats-note" id="ps-note"></p>
+
+    <p class="stats-explainer">
+      A freeze covers one missed day so a streak survives it. You get one a
+      month, and it is spent automatically — there is nothing to remember.
+    </p>
+
+    <footer class="credit">
+      <a href="./">Today's puzzle</a> — <a href="privacy.html">Privacy</a>
+    </footer>
+  </main>
+
+  <script type="module" src="js/stats-page.js"></script>
+</body>
+</html>

@@ -238,6 +238,9 @@ async function main() {
       moves: f[cols.Moves].split(' '),
       rating,
       mateIn,
+      // Kept for scripts/generate_explanations.js, which uses the tags to
+      // name the tactic rather than guessing it from the moves.
+      themes: themes.split(' ').filter(Boolean),
     };
 
     // Reservoir sampling: uniform sample of the whole file, bounded memory.
@@ -274,6 +277,7 @@ async function main() {
         fen: result.fen,
         solution: result.solution,
         mateIn,
+        themes: record.themes,
         rating: record.rating,
       });
     }
@@ -299,6 +303,7 @@ async function main() {
     `    fen: ${JSON.stringify(p.fen)},\n` +
     `    solution: ${JSON.stringify(p.solution)},\n` +
     `    mateIn: ${p.mateIn},\n` +
+    `    themes: ${JSON.stringify(p.themes || [])},\n` +
     `    rating: ${p.rating},\n` +
     '  },'
   )).join('\n');
@@ -318,6 +323,9 @@ async function main() {
  *   solution  remaining moves in SAN, player and opponent alternating,
  *             starting and ending with the player
  *   mateIn    number of player moves to mate
+ *   themes    Lichess tactic tags, used by the explanation script
+ *   explanation  one-line "why this works", added by
+ *                scripts/generate_explanations.js; absent until generated
  *   rating    Lichess difficulty rating; kept for reference, never shown
  *
  * Generated ${new Date().toISOString().slice(0, 10)} from lichess_db_puzzle.csv

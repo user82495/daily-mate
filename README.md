@@ -9,6 +9,10 @@ the board tells you the mate length up front, and you get three tries. Solve it
 or don't — either way that's the day. No accounts, no archive, and nothing that
 identifies you.
 
+Server features (streaks, percentile, notifications, explanations) each need a
+one-time setup step — see **[SETUP.md](SETUP.md)**. Without them the game still
+works; every one of them degrades to "hidden" rather than to an error.
+
 ## How it plays
 
 The board announces "Mate in 2", "Mate in 3", and so on. You play the side to
@@ -31,11 +35,59 @@ play on — never walking into mate when there's an alternative.
 ## Stats
 
 Played, solved percentage, current and max streak, and a histogram of attempts
-used (1 / 2 / 3 / X). Everything the player sees lives in `localStorage` under
-`dailymate.v1` and is computed on the device — none of it is uploaded.
+used (1 / 2 / 3 / X), under the `localStorage` key `dailymate.v1`.
 
-Streaks allow **one missed day per calendar month**. It applies silently, and
-the stats screen shows a small "streak saved" note when it rescues a run.
+**Streaks are computed on the server**, by `dm_complete_puzzle` in Postgres, so
+they cannot be edited from the page. The device keeps its own copy for the
+histogram and for showing something useful offline; `stats.html` prefers the
+server's figures and says so when it is falling back to the local ones.
+
+A streak survives **one missed day per calendar month** — a freeze, spent
+automatically. The result card says "Streak freeze used ❄️" on the day it saves
+a run. Freezes refill on the first completion of a new month, so there is no
+cron to run.
+
+## The result card
+
+When the day ends: the squares, the solve time, the streak, how you compare to
+other solvers, and one line on why the move works.
+
+```
+Daily Mate #142 ♟️
+⬜⬜🟩 0:47
+🔥 12
+
+dailymate.netlify.app
+```
+
+One square per attempt — ⬜ for an attempt that did not mate, and a final 🟩 for
+the solve or 🟥 for a day that ran out. No board, no notation, nothing that
+spoils the position. The streak line only appears at two days or more.
+
+Solve time runs from the first board render to the final move, and deliberately
+does not survive a reload — a puzzle left open overnight would otherwise report
+a fourteen-hour solve and poison the percentile for everyone.
+
+"Faster than 78% of solvers today" is hidden until twenty people have solved
+that puzzle; below that it is noise dressed up as a statistic.
+
+## Explanations
+
+One sentence under the result card — *"Deflection: the queen can't guard both
+the back rank and the knight."* Written once by
+`scripts/generate_explanations.js` and shipped inside `puzzles.js`, so no player
+request ever reaches an LLM and the line works offline. A puzzle with no
+explanation simply shows no line. See [SETUP.md](SETUP.md).
+
+## Notifications
+
+Off unless asked for, and only ever offered **after** a first completed puzzle —
+never on arrival. A player picks an hour; an hourly Netlify function sends to
+whoever's local clock has just reached it and who has not played today.
+
+On iOS the app shows an Add to Home Screen hint instead of a permission prompt,
+because Safari only exposes Web Push to an installed PWA and a prompt there
+cannot produce a subscription.
 
 The one figure that comes from elsewhere is "63% of players solved today's
 puzzle", which is fetched once when the stats sheet opens and stays hidden
@@ -43,11 +95,16 @@ until at least twenty people have played that day. See Analytics below.
 
 ## Analytics
 
-Anonymous, and small enough to describe in a sentence: once a day, when the
-puzzle ends, the app sends `{ anonId, puzzleDay, result, attemptsUsed }` and
-nothing else. `anonId` is a random UUID the browser mints for itself in
-`localStorage` under `dailymate.anon.v1`, the first time a puzzle is *finished*
-— a visitor who never plays is never given one and makes no request at all.
+Anonymous. Once a day, when the puzzle ends, the app sends
+`{ anonId, puzzleDay, result, attemptsUsed }` to `/api/track`, and separately
+reports the completion and its duration to `/api/complete` so the server can
+work out the streak and the percentile. `anonId` is a random UUID the browser
+mints for itself in `localStorage` under `dailymate.anon.v1` (mirrored to
+`dm_player_id`), the first time a puzzle is *finished* — a visitor who never
+plays is never given one and makes no request at all.
+
+Turning on notifications adds two more stored values: the hour chosen, and the
+IANA time zone name it is measured in. `privacy.html` lists all of it.
 
 No IP addresses, no user agents, no location, no cookies, no third-party
 scripts, no cross-site anything. `privacy.html` says the same thing to players,
@@ -196,7 +253,7 @@ and the solve-rate line stays hidden.
 
 The service worker is cache-first, so returning visitors keep the old version
 until the cache name changes. **Bump `CACHE` in `sw.js` on every deploy that
-changes a shipped file** — it's at `dailymate-v10` now. Anything under `/api/`
+changes a shipped file** — it's at `dailymate-v14` now. Anything under `/api/`
 is excluded from it deliberately: the cache lookup ignores query strings, so a
 cached `day-stats` response would be served for every other day too.
 

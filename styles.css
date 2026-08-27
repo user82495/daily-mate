@@ -666,3 +666,214 @@ button {
 }
 .devbar button:hover { background: var(--line); }
 .dev-meta { margin-left: auto; color: var(--text-faint); font-size: 11px; }
+
+/* =========================================================================
+   Result card — the day's outcome, inside the sheet
+   ========================================================================= */
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-link {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 17px;
+  line-height: 1;
+  transition: background 120ms linear, color 120ms linear;
+}
+.icon-link:hover { background: var(--surface-2); color: var(--text); }
+
+.result-card {
+  margin: 16px 0 4px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+/* The squares are the point of the card; give them room to be read. */
+.result-squares {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-meta {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.result-percentile,
+.result-explanation {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+/* The explanation is the one line that teaches something. Set it apart. */
+.result-explanation {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.result-btn {
+  flex: 1;
+  padding: 11px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 600;
+  transition: filter 120ms linear, transform 120ms var(--ease), background 120ms linear;
+}
+.result-btn:hover { background: var(--line); }
+.result-btn:active { transform: scale(0.97); }
+
+.result-btn.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #221B06;
+}
+.result-btn.is-primary:hover { filter: brightness(1.07); background: var(--accent); }
+
+/* Confirmation reads on the button itself, where the tap happened. */
+.result-btn.is-confirmed {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #221B06;
+}
+
+.result-status {
+  margin: 10px 0 0;
+  min-height: 16px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+/* =========================================================================
+   Notification opt-in
+   ========================================================================= */
+
+.push-panel {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.push-ask {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.push-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+.push-hint strong { color: var(--text); font-weight: 600; }
+
+.push-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.push-time {
+  font-size: 13px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.push-time select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 8px;
+}
+
+.push-yes,
+.push-no {
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.push-yes { background: var(--accent); color: #221B06; }
+.push-yes:hover { filter: brightness(1.07); }
+.push-yes:disabled { opacity: 0.6; cursor: default; }
+.push-no { background: var(--surface); color: var(--text-dim); border: 1px solid var(--line); }
+.push-no:hover { color: var(--text); }
+
+.push-status {
+  margin: 8px 0 0;
+  min-height: 16px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+/* =========================================================================
+   Stats page
+   ========================================================================= */
+
+.page-title {
+  margin: 4px 0 18px;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.stats-secondary {
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 18px;
+}
+
+.stats-note {
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.stats-explainer {
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-faint);
+}
+
+.stats-link {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+.stats-link:hover { color: var(--text); }

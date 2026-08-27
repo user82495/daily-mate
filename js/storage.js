@@ -33,7 +33,9 @@
  *       puzzleId: string,     //   guards against a regenerated puzzles.js
  *       results:  string[],   //   one entry per finished attempt: "fail"|"solve"
  *       state:    string,     //   "playing" | "solved" | "failed"
- *       streakSaved: boolean  //   forgiveness rescued the streak on this day
+ *       streakSaved: boolean, //   forgiveness rescued the streak on this day
+ *       seconds:  number?,    //   solve time, so a reopened card still shows it
+ *       committed: boolean?   //   guards the once-per-day commit and upload
  *     } | null
  *   }
  *

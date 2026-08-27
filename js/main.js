@@ -7,8 +7,10 @@ import { createGame } from './game.js';
 import { PUZZLES } from '../puzzles.js';
 import { puzzleFor, dayNumber, countdownText, msUntilTomorrow } from './daily.js';
 import { load, save, reset, todayRecord, commitResult } from './storage.js';
-import { shareText, share } from './share.js';
 import { reportResult, fetchDayStats } from './analytics.js';
+import { completePuzzle, fetchPercentile } from './api.js';
+import { createResultCard } from './results.js';
+import { maybeOfferNotifications } from './push.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -33,6 +35,18 @@ let today = todayRecord(state, day, puzzle.id);
 // A dev jump must never write over the real day's progress.
 if (devIndex !== null) today = { day, puzzleId: puzzle.id, results: [], state: 'playing', streakSaved: false };
 
+/* ------------------------------------------------------------------- clock
+ * Solve time is measured from the first board render to the final move, which
+ * is the span the player actually experiences. It deliberately does not
+ * survive a reload: a puzzle left open overnight would otherwise report a
+ * fourteen-hour solve and poison the percentile for everyone.
+ */
+
+let startedAt = null;
+const startClock = () => { if (startedAt === null) startedAt = Date.now(); };
+const elapsedSeconds = () =>
+  startedAt === null ? null : Math.round((Date.now() - startedAt) / 1000);
+
 /* ------------------------------------------------------------------ board */
 
 const board = createBoard($('board'), {
@@ -41,6 +55,8 @@ const board = createBoard($('board'), {
 });
 
 const game = createGame({ board, puzzle, onEvent: handleEvent });
+
+const resultCard = createResultCard({ number });
 
 /* --------------------------------------------------------------- chrome */
 
@@ -125,6 +141,9 @@ function finish(solved, results) {
   today.results = results;
   today.state = solved ? 'solved' : 'failed';
 
+  const seconds = elapsedSeconds();
+  if (Number.isFinite(seconds)) today.seconds = seconds;
+
   // Dev jumps are throwaway: never let them touch lifetime stats.
   if (devIndex === null && !today.committed) {
     today.committed = true;
@@ -133,20 +152,61 @@ function finish(solved, results) {
       solved,
       attemptsUsed: results.length,
     });
-    // The one thing Daily Mate sends anywhere, and the only place it is sent
-    // from. Guarded by the same flag as the local commit, so it happens once
-    // per day whatever else the player does with the tab.
     reportResult({ day, solved, attemptsUsed: results.length });
+    // The server owns the streak. This is also what records the row the
+    // percentile is drawn from. Guarded by the same flag as the local commit,
+    // so it happens once per day whatever else the player does with the tab.
+    recordCompletion(solved, seconds);
   }
   persist();
 
   $('progress').textContent = '';
+
+  // Show what is known now; the streak and percentile fill in when they land.
+  resultCard.show({
+    results,
+    solved,
+    seconds: Number.isFinite(seconds) ? seconds : null,
+    explanation: puzzle.explanation || null,
+  });
 
   if (solved) {
     setMessage(results.length === 1 ? 'Solved, first try.' : 'Solved.', { sticky: true });
     setTimeout(openSheet, 1100);
   }
   // The failed path opens the sheet after the solution finishes replaying.
+}
+
+/**
+ * Tell the server the day is over, then fill in the two numbers only it knows.
+ *
+ * Nothing here is awaited by the game: a player with no network sees the card
+ * without a streak line or a percentile, which is exactly the intended
+ * degradation.
+ */
+function recordCompletion(solved, seconds) {
+  completePuzzle({
+    puzzleId: puzzle.id,
+    solved,
+    solveSeconds: Number.isFinite(seconds) ? seconds : null,
+  }).then((res) => {
+    const stats = res?.stats;
+    if (stats) {
+      resultCard.update({
+        streak: Number(stats.current_streak),
+        freezeUsed: Boolean(res.freeze_used),
+      });
+    }
+    // Offer notifications only once a puzzle has actually been finished.
+    maybeOfferNotifications();
+  });
+
+  if (!solved || !Number.isFinite(seconds)) return;
+
+  fetchPercentile({ puzzleId: puzzle.id, solveSeconds: seconds }).then((res) => {
+    const pct = res?.fasterThan;
+    if (Number.isFinite(pct)) resultCard.update({ fasterThan: pct });
+  });
 }
 
 function persist() {
@@ -262,18 +322,6 @@ function stopCountdown() {
   countdownTimer = null;
 }
 
-/* ---------------------------------------------------------------- sharing */
-
-$('share').addEventListener('click', async () => {
-  const text = shareText({ number, mateIn: puzzle.mateIn, results: today.results });
-  const outcome = await share(text);
-  $('share-status').textContent =
-    outcome === 'copied' ? 'Copied to clipboard'
-    : outcome === 'failed' ? 'Could not copy'
-    : '';
-  setTimeout(() => { $('share-status').textContent = ''; }, 2400);
-});
-
 $('sheet-close').addEventListener('click', closeSheet);
 
 // With the day over, the attempt row reopens the results.
@@ -286,6 +334,7 @@ $('attempts').addEventListener('click', () => {
 if (today.state === 'playing') {
   game.start(today.results);
   renderAttempts(today.results);
+  startClock();
 } else {
   // Already finished today: the puzzle is done, no replay.
   renderAttempts(today.results);
@@ -293,6 +342,14 @@ if (today.state === 'playing') {
   board.setOrientation(game.playerColour, puzzle.fen);
   board.setInteractive(false);
   $('attempts').classList.add('is-done');
+  // Returning to a day already finished: rebuild the card from what was stored.
+  // The time is whatever was recorded when it was played, not a new measurement.
+  resultCard.show({
+    results: today.results,
+    solved: today.state === 'solved',
+    seconds: Number.isFinite(today.seconds) ? today.seconds : null,
+    explanation: puzzle.explanation || null,
+  });
   openSheet();
 }
 

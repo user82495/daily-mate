@@ -23,9 +23,10 @@
 
     <p>
       Daily Mate stores a random number on your device and records, once a day,
-      whether you solved that day's puzzle and how many attempts it took. There
-      are no accounts, no personal data, and no third-party analytics of any
-      kind.
+      whether you solved that day's puzzle, how many attempts it took, and how
+      long it took. If you turn on reminders it also keeps the hour you chose
+      and your time zone. There are no accounts, no personal data, and no
+      third-party analytics of any kind.
     </p>
 
     <h2>What is collected</h2>
@@ -53,11 +54,47 @@
 
       <dt>Attempts used</dt>
       <dd>One, two, or three.</dd>
+
+      <dt>Solve time</dt>
+      <dd>
+        How long the puzzle took, in seconds, measured from the board appearing
+        to your last move. It is what the &ldquo;faster than 78% of solvers&rdquo;
+        line is worked out from. It is not a timer on you: nothing is stored
+        about when you played, only how long it took.
+      </dd>
     </dl>
 
     <p>
-      That is the complete list. It exists so that one person can see how many
-      people are playing and which puzzles turn out to be too hard.
+      That is the complete list for playing. It exists so that one person can
+      see how many people are playing, which puzzles turn out to be too hard,
+      and so the app can show you your own streak.
+    </p>
+
+    <h2>If you turn on reminders</h2>
+
+    <p>
+      Notifications are off unless you ask for them, and you are only ever asked
+      after you have finished a puzzle — never when you arrive. If you say yes,
+      two more things are stored alongside your anonymous ID:
+    </p>
+
+    <dl class="fields">
+      <dt>The hour you picked</dt>
+      <dd>A number from 0 to 23. Nothing else about your schedule.</dd>
+
+      <dt>Your time zone</dt>
+      <dd>
+        The name your browser reports, such as <code>Europe/London</code>. This
+        is the only way to send a reminder at 9am <em>your</em> time from a job
+        that runs once an hour. It is a zone, not a location — it is the same
+        string for everyone in that zone.
+      </dd>
+    </dl>
+
+    <p>
+      Turning notifications off in your browser or clearing site data ends it.
+      A reminder that can no longer be delivered has its record deleted
+      automatically the next time one is attempted.
     </p>
 
     <h2>What is not collected</h2>
@@ -83,11 +120,17 @@
     <h2>Your stats stay on your device</h2>
 
     <p>
-      Played, solved percentage, streaks, and the attempts histogram are
-      computed and stored entirely in your browser, under the
-      <code>localStorage</code> key <code>dailymate.v1</code>. None of it is
-      uploaded. The anonymous ID sits beside it under
-      <code>dailymate.anon.v1</code>.
+      Played, solved percentage, and the attempts histogram are computed and
+      stored in your browser, under the <code>localStorage</code> key
+      <code>dailymate.v1</code>. The anonymous ID sits beside it under
+      <code>dailymate.anon.v1</code>, mirrored to <code>dm_player_id</code>.
+    </p>
+
+    <p>
+      One thing changed when streaks moved to the server: your streak is now
+      counted there too, against your anonymous ID, so that it survives and
+      cannot be edited from the page. The stats page shows the server's figures
+      when it can reach them and your device's own when it cannot.
     </p>
 
     <p>

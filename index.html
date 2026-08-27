@@ -16,7 +16,10 @@
   <main class="app">
     <header class="topbar">
       <h1 class="wordmark">Daily<span>Mate</span></h1>
-      <span class="puzzle-no" id="puzzle-no"></span>
+      <div class="topbar-right">
+        <span class="puzzle-no" id="puzzle-no"></span>
+        <a class="icon-link" href="stats.html" aria-label="Your stats" title="Your stats">◴</a>
+      </div>
     </header>
 
     <div class="prompt">
@@ -59,6 +62,23 @@
       <button class="sheet-close" id="sheet-close" type="button" aria-label="Close">×</button>
 
       <h2 class="sheet-title" id="sheet-title"></h2>
+
+      <!-- The day's result: squares, time, streak, percentile, explanation. -->
+      <div class="result-card" id="result-card" hidden>
+        <p class="result-squares" id="result-squares"></p>
+        <p class="result-meta" id="result-meta" hidden></p>
+        <p class="result-percentile" id="result-percentile" hidden></p>
+        <p class="result-explanation" id="result-explanation" hidden></p>
+        <div class="result-actions">
+          <button class="result-btn" id="copy-result" type="button">Copy result</button>
+          <button class="result-btn is-primary" id="share-result" type="button">Share</button>
+        </div>
+        <p class="result-status" id="result-status" role="status" aria-live="polite"></p>
+      </div>
+
+      <!-- Offered once, after a first completed puzzle. Never on page load. -->
+      <div class="push-panel" id="push-panel" hidden></div>
+
       <p class="sheet-note" id="streak-saved" hidden>streak saved</p>
       <p class="solve-rate" id="solve-rate" hidden></p>
 
@@ -77,9 +97,8 @@
           <span class="countdown-label">Next puzzle in</span>
           <span class="countdown-value" id="countdown">—</span>
         </div>
-        <button class="share-btn" id="share" type="button">Share</button>
+        <a class="stats-link" href="stats.html">All your stats →</a>
       </div>
-      <p class="share-status" id="share-status" role="status" aria-live="polite"></p>
     </div>
   </section>
 

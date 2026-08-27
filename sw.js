@@ -13,7 +13,7 @@
  * activate, and clients pick the new one up on their next load.
  */
 
-const CACHE = 'dailymate-v11';
+const CACHE = 'dailymate-v14';
 
 /**
  * Everything the private dashboard is made of. None of it belongs in the app's
@@ -35,6 +35,12 @@ const ASSETS = [
   'js/storage.js',
   'js/share.js',
   'js/analytics.js',
+  'js/api.js',
+  'js/player.js',
+  'js/results.js',
+  'js/push.js',
+  'stats.html',
+  'js/stats-page.js',
   'privacy.html',
   'prose.css',
   'vendor/chess.js',
@@ -47,7 +53,14 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
+      // `cache.addAll(ASSETS)` fetches through the HTTP cache, so a freshly
+      // bumped CACHE can be filled with the *previous* build's files — the one
+      // thing bumping it is supposed to prevent. Requesting each asset with
+      // `cache: 'reload'` forces a revalidated fetch, so a new cache name
+      // really does mean new files.
+      .then((cache) => cache.addAll(
+        ASSETS.map((url) => new Request(url, { cache: 'reload' }))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -100,5 +113,70 @@ self.addEventListener('fetch', (event) => {
           return Response.error();
         });
     })
+  );
+});
+
+
+/* ===========================================================================
+ * Web Push
+ *
+ * The payload is built by netlify/functions/send-notifications.mjs and is
+ * always JSON. It is still parsed defensively: a push with no body, or one
+ * from a stale sender, should show something sensible rather than throw inside
+ * the service worker where nobody would ever see the error.
+ * =========================================================================== */
+
+const FALLBACK = {
+  title: "Today's puzzle is live ♟️",
+  body: 'A new mate is waiting.',
+  url: '/',
+};
+
+self.addEventListener('push', (event) => {
+  let data = FALLBACK;
+  try {
+    if (event.data) data = { ...FALLBACK, ...event.data.json() };
+  } catch {
+    // Not JSON. Fall back rather than dropping the notification entirely —
+    // some browsers show a generic "site updated" message if we show nothing.
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-192.png',
+      // One puzzle a day: collapse rather than stack, so a missed day cannot
+      // leave two notifications sitting in the tray.
+      tag: 'dailymate-daily',
+      renotify: true,
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin);
+
+  event.waitUntil(
+    (async () => {
+      const clientList = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      // Prefer focusing a tab that is already open on the app over opening a
+      // second one — the player almost never wants two copies of a daily game.
+      for (const client of clientList) {
+        if (new URL(client.url).origin === target.origin && 'focus' in client) {
+          await client.focus();
+          if ('navigate' in client && client.url !== target.href) {
+            await client.navigate(target.href).catch(() => {});
+          }
+          return;
+        }
+      }
+      if (self.clients.openWindow) await self.clients.openWindow(target.href);
+    })()
   );
 });

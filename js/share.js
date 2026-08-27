@@ -1,41 +1,87 @@
 /*
  * share.js — plain-text result sharing.
  *
- * The text reveals how the day went and nothing else: no FEN, no moves, no
- * hint about where the pieces stand. Mate length is included because it frames
- * the score, and it is already announced to every player before they start.
+ * The text reveals how the day went and nothing else: no board, no move
+ * notation, no hint about where the pieces stand. Mate length is deliberately
+ * absent too — it is a real clue about the shape of the position, and the
+ * squares already say how many attempts it took.
+ *
+ * Layout:
+ *
+ *   Daily Mate #142 ♟️
+ *   ⬜⬜🟩 0:47
+ *   🔥 12
+ *
+ *   dailymate.netlify.app
+ *
+ * One square per attempt: ⬜ for an attempt that failed to mate, and a final
+ * 🟩 for the solve or 🟥 for a day that ran out of attempts. So a solve on the
+ * third try is ⬜⬜🟩 and a failure is ⬜⬜🟥 — three squares either way, one per
+ * attempt, with the last one carrying the outcome.
  */
 
 /** Shown as the last line of every share. Change it here and nowhere else. */
 export const SHARE_URL = 'dailymate.netlify.app';
 
-const SLOT = {
-  fail: '✗',   // ✗ an attempt that failed to mate
-  solve: '✓',  // ✓ the attempt that solved it
-  unused: '⬜', // ⬜ an attempt never needed
+const SQUARE = {
+  fail: '⬜',   // an attempt that did not mate
+  solve: '🟩',  // the attempt that solved it
+  lost: '🟥',   // the last attempt of a day that was never solved
 };
 
-const EMBLEM = '♔'; // ♔
+const EMBLEM = '♟️';
+const FLAME = '🔥';
+
+/** mm:ss. Hours are folded into the minutes rather than adding a third field. */
+export function formatDuration(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+/**
+ * The squares row for a finished day.
+ *
+ * @param {string[]} results finished attempts, "fail" | "solve"
+ * @param {boolean}  solved
+ */
+function squares(results, solved) {
+  if (!results.length) return solved ? SQUARE.solve : SQUARE.lost;
+  return results
+    .map((r, i) => {
+      const isLast = i === results.length - 1;
+      if (r === 'solve') return SQUARE.solve;
+      // The final failed attempt of an unsolved day is the red one.
+      return isLast && !solved ? SQUARE.lost : SQUARE.fail;
+    })
+    .join('');
+}
 
 /**
  * Build the share text.
  *
  * @param {object}   result
- * @param {number}   result.number   puzzle number, e.g. 14
- * @param {number}   result.mateIn   mate length announced on the board
- * @param {string[]} result.results  finished attempts, "fail" | "solve"
+ * @param {number}   result.number        puzzle number, e.g. 142
+ * @param {string[]} result.results       finished attempts, "fail" | "solve"
+ * @param {boolean}  result.solved
+ * @param {number}   [result.seconds]     time from first render to final move
+ * @param {number}   [result.streak]      current streak; shown only at 2 or more
  */
-export function shareText({ number, mateIn, results }) {
-  const slots = [];
-  for (let i = 0; i < 3; i++) {
-    slots.push(SLOT[results[i]] || SLOT.unused);
-  }
-  return [
-    `Daily Mate #${number} — Mate in ${mateIn}`,
-    `${EMBLEM} ${slots.join(' ')}`,
-    '',
-    SHARE_URL,
-  ].join('\n');
+export function shareText({ number, results = [], solved, seconds, streak }) {
+  const timed = Number.isFinite(seconds);
+  const lines = [
+    `Daily Mate #${number} ${EMBLEM}`,
+    timed
+      ? `${squares(results, solved)} ${formatDuration(seconds)}`
+      : squares(results, solved),
+  ];
+
+  // A streak of one is just "you played today" — not worth a line.
+  if (Number.isFinite(streak) && streak >= 2) lines.push(`${FLAME} ${streak}`);
+
+  lines.push('', SHARE_URL);
+  return lines.join('\n');
 }
 
 /**
@@ -55,14 +101,22 @@ export async function share(text) {
       if (err && err.name === 'AbortError') return 'shared';
     }
   }
+  return (await copy(text)) ? 'copied' : 'failed';
+}
 
+/**
+ * Clipboard only, for the "Copy result" button — which should never open a
+ * share sheet, because the player asked for the opposite.
+ *
+ * @returns {Promise<boolean>}
+ */
+export async function copy(text) {
   try {
     await navigator.clipboard.writeText(text);
-    return 'copied';
+    return true;
   } catch {
     // Clipboard API needs a secure context; fall back to the old selection trick.
-    if (legacyCopy(text)) return 'copied';
-    return 'failed';
+    return legacyCopy(text);
   }
 }
 
