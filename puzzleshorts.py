@@ -67,7 +67,7 @@ SQ_DARK = "#6A7386"
 FONT = ("-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, "
         "'Helvetica Neue', Arial, sans-serif")
 
-APP_URL = "dailymate.netlify.app"
+APP_URL = "dailymatechess.netlify.app"
 
 # --- captions ---------------------------------------------------------------
 

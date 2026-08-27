@@ -2,7 +2,7 @@
 
 One forced mate a day. Three attempts.
 
-**[dailymate.netlify.app](https://dailymate.netlify.app)**
+**[dailymatechess.netlify.app](https://dailymatechess.netlify.app)**
 
 A daily chess puzzle in the spirit of Wordle: everyone gets the same puzzle,
 the board tells you the mate length up front, and you get three tries. Solve it
@@ -57,7 +57,7 @@ Daily Mate #142 ♟️
 ⬜⬜🟩 0:47
 🔥 12
 
-dailymate.netlify.app
+dailymatechess.netlify.app
 ```
 
 One square per attempt — ⬜ for an attempt that did not mate, and a final 🟩 for
@@ -253,7 +253,7 @@ and the solve-rate line stays hidden.
 
 The service worker is cache-first, so returning visitors keep the old version
 until the cache name changes. **Bump `CACHE` in `sw.js` on every deploy that
-changes a shipped file** — it's at `dailymate-v14` now. Anything under `/api/`
+changes a shipped file** — it's at `dailymate-v15` now. Anything under `/api/`
 is excluded from it deliberately: the cache lookup ignores query strings, so a
 cached `day-stats` response would be served for every other day too.
 

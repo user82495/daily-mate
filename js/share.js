@@ -12,7 +12,7 @@
  *   ⬜⬜🟩 0:47
  *   🔥 12
  *
- *   dailymate.netlify.app
+ *   dailymatechess.netlify.app
  *
  * One square per attempt: ⬜ for an attempt that failed to mate, and a final
  * 🟩 for the solve or 🟥 for a day that ran out of attempts. So a solve on the
@@ -21,7 +21,7 @@
  */
 
 /** Shown as the last line of every share. Change it here and nowhere else. */
-export const SHARE_URL = 'dailymate.netlify.app';
+export const SHARE_URL = 'dailymatechess.netlify.app';
 
 const SQUARE = {
   fail: '⬜',   // an attempt that did not mate

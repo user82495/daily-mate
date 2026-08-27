@@ -102,7 +102,7 @@ environment at cold start, so existing instances will not see new values.
 Check it took:
 
 ```bash
-curl https://dailymate.netlify.app/api/vapid-key
+curl https://dailymatechess.netlify.app/api/vapid-key
 ```
 
 `{"key":"..."}` means push is live. `{"key":null}` means the variable is not
@@ -189,7 +189,7 @@ git push
 ```
 
 Bump `CACHE` in `sw.js` whenever a shipped file changes, or returning visitors
-keep the old version. It is at `dailymate-v12`.
+keep the old version. It is at `dailymate-v15`.
 
 ---
 
