@@ -13,7 +13,7 @@
  * activate, and clients pick the new one up on their next load.
  */
 
-const CACHE = 'dailymate-v22';
+const CACHE = 'dailymate-v23';
 
 /**
  * Everything the private dashboard is made of. None of it belongs in the app's

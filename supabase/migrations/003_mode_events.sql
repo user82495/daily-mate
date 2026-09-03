@@ -171,15 +171,32 @@ to service_role;
 -- ================================================== fold into the dashboard
 --
 -- dm_dashboard() is replaced rather than supplemented so the dashboard stays a
--- single round trip. Everything it returned before is returned unchanged; two
--- keys are added. Replacing a function preserves its grants, but they are
--- re-issued below so this file describes its own access story.
+-- single round trip. Everything it returned before is returned unchanged; three
+-- keys are added — 'modes', 'crossover', and 'modes_available'.
+--
+-- The two mode lookups are best-effort, inside their own exception blocks and
+-- reached through EXECUTE. The daily numbers are computed first and separately,
+-- so a missing mode_events table, a half-applied migration or a missing grant
+-- costs the mode section and nothing else. Before this, any of those took the
+-- whole payload down and the dashboard lost plays, players and retention along
+-- with it — see 004_dashboard_failsoft.sql, which carries the same definition
+-- so the two files converge and may be run in either order.
 
 create or replace function public.dm_dashboard()
 returns jsonb
-language sql
+language plpgsql
 stable
 as $$
+declare
+  result      jsonb;
+  modes_j     jsonb   := '[]'::jsonb;
+  crossover_j jsonb   := 'null'::jsonb;
+  modes_ok    boolean := true;
+begin
+  -- ---------------------------------------------------------------- daily
+  -- Unchanged from schema.sql, and computed before anything to do with modes
+  -- is touched. If this raises, the dashboard is genuinely broken and should
+  -- say so; nothing below can affect it.
   select jsonb_build_object(
     'generated_at', now(),
     'totals',    (select to_jsonb(x) from public.dm_totals() x),
@@ -187,11 +204,49 @@ as $$
     'puzzles',   (select coalesce(jsonb_agg(to_jsonb(x) order by x.day_num),    '[]'::jsonb) from public.dm_puzzle_stats() x),
     'attempts',  (select coalesce(jsonb_agg(to_jsonb(x) order by x.sort_key),   '[]'::jsonb) from public.dm_attempt_distribution() x),
     'streaks',   (select coalesce(jsonb_agg(to_jsonb(x) order by x.sort_key),   '[]'::jsonb) from public.dm_streak_distribution() x),
-    'retention', (select coalesce(jsonb_agg(to_jsonb(x) order by x.cohort_day), '[]'::jsonb) from public.dm_retention() x),
-    'modes',     (select coalesce(jsonb_agg(to_jsonb(x)), '[]'::jsonb) from public.dm_mode_summary() x),
-    'crossover', (select to_jsonb(x) from public.dm_mode_crossover() x)
+    'retention', (select coalesce(jsonb_agg(to_jsonb(x) order by x.cohort_day), '[]'::jsonb) from public.dm_retention() x)
+  )
+  into result;
+
+  -- ---------------------------------------------------------------- modes
+  -- EXECUTE rather than a direct call: a plain reference would be resolved when
+  -- this function is created, so 004 could not be applied before 003. Dynamic
+  -- SQL defers that to call time, where the exception block is waiting.
+  begin
+    execute
+      'select coalesce(jsonb_agg(to_jsonb(x)), ''[]''::jsonb) from public.dm_mode_summary() x'
+      into modes_j;
+  exception when others then
+    modes_ok := false;
+    modes_j  := '[]'::jsonb;
+    raise warning 'dm_dashboard: dm_mode_summary() unavailable (%) — mode section will render empty', sqlerrm;
+  end;
+
+  if modes_ok then
+    begin
+      execute 'select to_jsonb(x) from public.dm_mode_crossover() x'
+        into crossover_j;
+    exception when others then
+      modes_ok    := false;
+      crossover_j := 'null'::jsonb;
+      raise warning 'dm_dashboard: dm_mode_crossover() unavailable (%) — crossover will render as a dash', sqlerrm;
+    end;
+  end if;
+
+  return result || jsonb_build_object(
+    'modes',           modes_j,
+    'crossover',       crossover_j,
+    'modes_available', modes_ok
   );
+end
 $$;
 
+comment on function public.dm_dashboard() is
+  'Everything the dashboard draws, in one round trip. The mode keys are
+   best-effort: if the mode analytics are missing the daily numbers are still
+   returned and modes_available is false.';
+
+-- Replacing a function preserves its grants, but they are re-issued so this
+-- file describes its own access story.
 revoke execute on function public.dm_dashboard() from public, anon, authenticated;
 grant execute on function public.dm_dashboard() to service_role;

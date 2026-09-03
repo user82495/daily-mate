@@ -2,13 +2,16 @@
 -- dashboard_parity.sql — did adding the modes move any daily number?
 -- ===========================================================================
 --
--- Run this in the Supabase SQL Editor after 003_mode_events.sql is applied.
+-- Run this in the Supabase SQL Editor after the migrations are applied. It is
+-- also meaningful before 003: the mode keys will be present but empty, with
+-- modes_available false, and the daily keys must still match exactly.
 -- It reads; it writes nothing, creates nothing permanent, and is safe to run
 -- against production as many times as you like.
 --
 -- WHAT IT CHECKS
 --
--- 003 replaced dm_dashboard() to add 'modes' and 'crossover'. The bar for that
+-- 003 replaced dm_dashboard() to add 'modes', 'crossover' and 'modes_available'.
+-- The bar for that
 -- change was that every pre-existing daily number reads exactly as it did
 -- before. This rebuilds the *old* function body verbatim, as a session-local
 -- function in pg_temp, runs both against the same live data in the same
@@ -74,8 +77,8 @@ from k, old_run o, new_run n
 
 union all
 
--- The two keys 003 is supposed to add: absent before, present after. A missing
--- one here means the migration did not actually take.
+-- The three keys 003/004 are supposed to add: absent before, present after. A
+-- missing one here means the migration did not actually take.
 select
   key,
   case
@@ -88,7 +91,7 @@ select
     when 'array' then jsonb_array_length(n.j -> key)::text || ' rows'
     else coalesce(jsonb_typeof(n.j -> key), 'absent')
   end
-from (values ('modes'), ('crossover')) as t(key),
+from (values ('modes'), ('crossover'), ('modes_available')) as t(key),
      (select pg_temp.dm_dashboard_pre_modes() as j) o,
      (select public.dm_dashboard() as j) n
 
@@ -113,7 +116,7 @@ begin
     end if;
   end loop;
 
-  foreach key in array array['modes','crossover']
+  foreach key in array array['modes','crossover','modes_available']
   loop
     if not (new_j ? key) then
       missing := missing || key;
@@ -133,6 +136,12 @@ begin
       array_to_string(missing, ', ');
   end if;
 
-  raise notice 'dashboard parity OK — all 6 pre-existing keys identical, both mode keys present.';
+  -- A false marker is not a parity failure — it is the fail-soft path working,
+  -- and worth saying out loud so it is not mistaken for "nobody has played".
+  if (new_j -> 'modes_available') = 'false'::jsonb then
+    raise notice 'NOTE: modes_available is false. dm_mode_summary()/dm_mode_crossover() are not reachable, so the dashboard draws the mode section as dashes. Has 003_mode_events.sql been run?';
+  end if;
+
+  raise notice 'dashboard parity OK — all 6 pre-existing keys identical, all 3 mode keys present.';
 end
 $$;

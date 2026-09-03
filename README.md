@@ -344,7 +344,7 @@ and the solve-rate line stays hidden.
 
 The service worker is cache-first, so returning visitors keep the old version
 until the cache name changes. **Bump `CACHE` in `sw.js` on every deploy that
-changes a shipped file** — it's at `dailymate-v22` now. Anything under `/api/`
+changes a shipped file** — it's at `dailymate-v23` now. Anything under `/api/`
 is excluded from it deliberately: the cache lookup ignores query strings, so a
 cached `day-stats` response would be served for every other day too.
 
