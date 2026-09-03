@@ -888,6 +888,78 @@ button {
 .mode-root { padding-bottom: 24px; }
 body.in-mode { overflow-x: hidden; }
 
+/*
+ * Tap targets in the mode header.
+ *
+ * The wordmark (18px tall) and the × (30px) are both links back to the daily,
+ * and both were under the 44px a thumb actually needs — the × especially, since
+ * it sits in the top corner where a one-handed grip is least accurate and it is
+ * the only way out of a mode.
+ *
+ * The hit area is grown with a centred pseudo-element rather than by resizing
+ * the elements, so nothing in the header moves: a 30px circle that accepts a
+ * 44px touch looks identical and behaves properly. Applied inside .mode-root
+ * only, so the daily's own header is untouched.
+ */
+.mode-root .icon-link,
+.mode-root .wordmark a { position: relative; }
+
+.mode-root .icon-link::after,
+.mode-root .wordmark a::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * Anchors that are chrome, not prose.
+ *
+ * The daily's header wordmark is an <h1> and its result buttons are <button>
+ * elements, so neither ever picked up a link's underline. The mode header wraps
+ * the wordmark in an <a href="#/"> and the mode result cards use an <a> for
+ * "Back to the daily" — both of which arrived underlined and in the browser's
+ * default link blue, which is not what the rest of the app looks like.
+ */
+.mode-root .wordmark a {
+  color: inherit;
+  text-decoration: none;
+}
+a.result-btn {
+  text-decoration: none;
+  text-align: center;
+}
+
+/*
+ * Four buttons where the daily has two.
+ *
+ * .result-actions was a nowrap flex row built for "Copy result" and "Share".
+ * The modes add "Play again" and "Back to the daily", and at 390px four
+ * `flex: 1` children collapse to 75px each — round blobs with their labels
+ * broken across three lines. Letting the row wrap turns that into two rows of
+ * two, and the basis keeps a button from being narrower than its own label.
+ *
+ * The daily is untouched: two buttons still fit one row, and they are already
+ * far wider than the basis.
+ */
+.result-actions { flex-wrap: wrap; }
+.result-actions > .result-btn { flex: 1 1 calc(50% - 4px); min-width: 8.5em; }
+
+/*
+ * 11px of padding around a 14px label comes to 41px, three short of the 44px a
+ * thumb needs. Scoped to the modes: the daily's own result buttons share the
+ * class and the same shortfall, but moving them is a change to the daily, and
+ * that is not this pass's to make.
+ */
+.mode-root .result-btn {
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+}
+
 .mode-stage { display: flex; flex-direction: column; }
 
 .mode-prompt {

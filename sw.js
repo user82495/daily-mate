@@ -13,7 +13,7 @@
  * activate, and clients pick the new one up on their next load.
  */
 
-const CACHE = 'dailymate-v21';
+const CACHE = 'dailymate-v22';
 
 /**
  * Everything the private dashboard is made of. None of it belongs in the app's
@@ -52,14 +52,11 @@ const ASSETS = [
   'js/track.js',
   'js/dataloader.js',
   'js/resultcard.js',
+  'js/modecatalog.js',
   'js/modes/endless.js',
   'js/modes/elo.js',
   'js/modes/judge.js',
   'js/modes/duel.js',
-  // data/*.json is deliberately NOT precached: half a megabyte would be paid by
-  // every visitor at install, including the majority who only ever play the
-  // daily. The runtime caching below picks each file up on first use instead,
-  // so a mode works offline from the second visit onward.
   'privacy.html',
   'prose.css',
   'vendor/chess.js',
@@ -67,6 +64,29 @@ const ASSETS = [
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-180.png',
+];
+
+/*
+ * Mode datasets, precached separately and best-effort.
+ *
+ * Two reasons they are not in ASSETS. First, `addAll` is all-or-nothing: one
+ * 404 rejects the whole call and the install fails, taking offline support for
+ * the entire app with it — and `games.json` and `evals.json` genuinely are not
+ * deployed yet. Listing them here and adding them one at a time means a missing
+ * dataset costs nothing, and the day one is dropped into `data/` it starts
+ * being cached with no change to this file.
+ *
+ * Second, the cost is real and worth stating: this is roughly 450KB today, paid
+ * at install by every visitor including the majority who only play the daily.
+ * The daily itself never waits on it — install happens after first paint, and
+ * puzzles ship inside puzzles.js — but it is not free. Moving these back to
+ * runtime-only caching is a one-line change if that trade stops being worth it.
+ */
+const DATA_ASSETS = [
+  'data/mate1.json',
+  'data/duel.json',
+  'data/games.json',
+  'data/evals.json',
 ];
 
 self.addEventListener('install', (event) => {
@@ -79,7 +99,13 @@ self.addEventListener('install', (event) => {
       // really does mean new files.
       .then((cache) => cache.addAll(
         ASSETS.map((url) => new Request(url, { cache: 'reload' }))
-      ))
+      ).then(() => Promise.all(
+        // One at a time, and a failure is not a failure: a dataset that is not
+        // deployed simply is not cached, and the install still succeeds.
+        DATA_ASSETS.map((url) => cache
+          .add(new Request(url, { cache: 'reload' }))
+          .catch(() => {}))
+      )))
       .then(() => self.skipWaiting())
   );
 });

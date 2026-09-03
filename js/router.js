@@ -17,12 +17,17 @@
  * fresh mount.
  */
 
-const MODES = {
-  endless: () => import('./modes/endless.js'),
-  elo: () => import('./modes/elo.js'),
-  judge: () => import('./modes/judge.js'),
-  duel: () => import('./modes/duel.js'),
-};
+import { byId } from './modecatalog.js';
+
+/*
+ * Route -> module loader, derived from the catalog rather than restated. A
+ * gated mode keeps its route on purpose: typing #/elo when games.json is not
+ * deployed should reach the mode and get its "could not load" retry state.
+ * Availability decides what is *linked*, not what exists.
+ */
+const MODES = Object.fromEntries(
+  Object.entries(byId).map(([id, mode]) => [id, mode.load]),
+);
 
 let dailyEl = null;
 let modeEl = null;

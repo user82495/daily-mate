@@ -33,3 +33,6 @@ local-dashboard/
 # Python bytecode from the data build scripts
 __pycache__/
 *.pyc
+
+# Review pages from scripts/review_evals.py — regenerate, never commit.
+evals-review.html

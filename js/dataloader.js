@@ -10,17 +10,38 @@
  * one request, not two.
  */
 
-const SOURCES = {
-  endless: 'data/mate1.json',
-  elo: 'data/games.json',
-  judge: 'data/evals.json',
-  duel: 'data/duel.json',
-};
+import { SOURCES, byId } from './modecatalog.js';
 
 const cache = new Map();     // mode -> array
 const inflight = new Map();  // mode -> promise
 
 export class DataError extends Error {}
+
+/*
+ * A dataset is either a bare array of rows, or an object wrapping one.
+ *
+ * The wrapper exists so a file can carry a fact about itself — `evals.json`
+ * has to say whether its brilliant labels were engine-verified, and an array
+ * has nowhere to put that. The older files are plain arrays and stay that way;
+ * there is nothing to migrate and no version field to reason about.
+ */
+function unwrap(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === 'object') {
+    for (const key of ['positions', 'games', 'puzzles', 'items']) {
+      if (Array.isArray(raw[key])) return raw[key];
+    }
+  }
+  return null;
+}
+
+/** Everything in the file that is not the rows — the wrapper's own fields. */
+function meta(raw) {
+  if (!raw || Array.isArray(raw) || typeof raw !== 'object') return {};
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) if (!Array.isArray(v)) out[k] = v;
+  return out;
+}
 
 /**
  * The dataset for a mode.
@@ -57,9 +78,19 @@ export function loadData(mode) {
       });
 
   const promise = attempt(1)
-    .then((data) => {
+    .then((raw) => {
+      const data = unwrap(raw);
       if (!Array.isArray(data) || data.length === 0) {
         throw new DataError(`${url} is empty`);
+      }
+      // A dataset can exist and still not be fit to use. Judge's is the case
+      // that matters: an evals.json built without an engine holds blunders
+      // only, and a mode where every answer is "blunder" is not a mode. The
+      // catalog says how to tell; failing here means the route shows the same
+      // "could not load" state a missing file would, which is the point.
+      const check = byId[mode]?.verify;
+      if (check && !check(JSON.stringify(meta(raw)))) {
+        throw new DataError(`${url} is present but not verified`);
       }
       cache.set(mode, data);
       inflight.delete(mode);
@@ -150,4 +181,3 @@ export function bootstrap(mode, stage, message, render, isDisposed = () => false
   attempt();
 }
 
-export { SOURCES };

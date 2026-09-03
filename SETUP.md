@@ -49,6 +49,20 @@ with no mode column. Four runs of Endless in an evening is four events, and
 `/api/mode-event`, still sends the same anonymous id, and still never touches
 Supabase directly.
 
+### Checking the daily numbers did not move
+
+Adding the modes replaced `dm_dashboard()`. Everything it returned before is
+supposed to be returned unchanged. To prove that against your own data:
+
+Supabase dashboard → **SQL Editor** → paste `supabase/checks/dashboard_parity.sql`
+→ **Run**.
+
+It rebuilds the pre-modes version of the function in `pg_temp`, runs both
+against the same live rows, and compares them key by key. It prints a row per
+key and then raises an exception if any pre-existing key differs, so it fails
+loudly rather than printing a table nobody reads. It reads only — nothing is
+written and nothing permanent is created.
+
 ### Nothing to configure in the Supabase dashboard
 
 No RLS policies to add, no anon-key settings to change. Row level security is
@@ -209,7 +223,7 @@ git push
 ```
 
 Bump `CACHE` in `sw.js` whenever a shipped file changes, or returning visitors
-keep the old version. It is at `dailymate-v21`.
+keep the old version. It is at `dailymate-v22`.
 
 ---
 

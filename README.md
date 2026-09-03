@@ -265,28 +265,57 @@ python3 scripts/build_duel.py lichess_db_puzzle.csv
 ```
 
 `data/games.json` and `data/evals.json` are **not committed and not yet
-built** — they need a monthly Lichess game dump rather than the puzzle CSV, and
-those are tens of gigabytes. Until they exist, `#/elo` and `#/judge` show
-"Could not load this mode" with a retry, which is the intended behaviour for
-absent data rather than a crash. To build them, download a monthly PGN from
-<https://database.lichess.org/> and run:
+built** — they need a monthly Lichess game dump rather than the puzzle CSV.
+
+**A mode with no data is not offered.** `js/modecatalog.js` is the one list of
+modes, and it says which file each one needs. On idle after the daily has
+painted, the app HEADs those files; the "Keep going" cards and the header nav
+render only what came back. So Elo and Judge are currently invisible, and
+dropping `games.json` into `data/` makes the Elo card appear on the next deploy
+with no code change and no flag to remember to flip.
+
+Judge has a second condition: its file must also be marked
+`"brilliantLabelsVerified": true`. An `evals.json` built without an engine holds
+blunders only, and a mode where every answer is "blunder" is not a mode — so an
+unverified file is treated exactly like a missing one. The marker is read from
+the file's opening bytes with a Range request rather than by downloading it.
+
+Typing `#/elo` by hand still reaches the mode and shows its "Could not load this
+mode" retry state. Availability decides what is *linked*, not what exists.
+
+To build them, download a monthly PGN from <https://database.lichess.org/> and
+run — streaming, so nothing is decompressed to disk:
 
 ```bash
-python3 scripts/build_games.py lichess_db_standard_rated_2026-01.pgn.zst
+zstdcat lichess_db_standard_rated_2019-03.pgn.zst | python3 scripts/build_games.py -
 ```
 
 ```bash
-python3 scripts/build_evals.py lichess_db_standard_rated_2026-01.pgn.zst
+zstdcat lichess_db_standard_rated_2019-03.pgn.zst \
+  | python3 scripts/build_evals.py - --engine /path/to/stockfish
 ```
+
+An old month is the right choice: the caps are small, and a 2019 dump fills them
+at a fraction of the size. Both builders stop as soon as the cap is full rather
+than reading to EOF.
 
 `build_evals.py` reads the `%eval` annotations Lichess ships on analysed games.
 One of the three conditions for "brilliant" — that no non-sacrificial move
 scores within 100cp — cannot be answered from those annotations, because
 `%eval` records a single number per position: the evaluation after the move
-actually played, with nothing about the alternatives. Pass `--engine
-/path/to/stockfish` to evaluate that condition properly; without it the script
-applies the other two and says so in its summary. `scripts/README.md` has the
-detail.
+actually played, with nothing about the alternatives. `--engine` is therefore
+required for brilliant labels; without it the script emits blunders only and
+marks the file unverified, which the app refuses to load.
+
+Before trusting a fresh dataset, look at it:
+
+```bash
+python3 scripts/review_evals.py && open evals-review.html
+```
+
+That writes a static page of random labelled positions — board, the played move
+as an arrow, the label, the eval swing — with a way to tick the wrong-looking
+ones and dump their IDs. `scripts/README.md` has the rest.
 
 ## Daily rollover
 
@@ -315,7 +344,7 @@ and the solve-rate line stays hidden.
 
 The service worker is cache-first, so returning visitors keep the old version
 until the cache name changes. **Bump `CACHE` in `sw.js` on every deploy that
-changes a shipped file** — it's at `dailymate-v21` now. Anything under `/api/`
+changes a shipped file** — it's at `dailymate-v22` now. Anything under `/api/`
 is excluded from it deliberately: the cache lookup ignores query strings, so a
 cached `day-stats` response would be served for every other day too.
 
