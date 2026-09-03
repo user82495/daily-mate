@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="app">
+  <main class="app" id="daily-root">
     <header class="topbar">
       <h1 class="wordmark">Daily<span>Mate</span></h1>
       <div class="topbar-right">
@@ -56,6 +56,10 @@
     </footer>
   </main>
 
+  <!-- Modes mount here. Empty and hidden on the daily route, which is the
+       only route that matters for first paint. -->
+  <main class="app mode-root" id="mode-root" hidden></main>
+
   <!-- Stats screen. Shown once the day's puzzle is over. -->
   <section class="sheet" id="sheet" hidden aria-labelledby="sheet-title">
     <div class="sheet-inner">
@@ -78,6 +82,8 @@
 
       <!-- Offered once, after a first completed puzzle. Never on page load. -->
       <div class="push-panel" id="push-panel" hidden></div>
+
+      <div id="keep-going-slot"></div>
 
       <p class="sheet-note" id="streak-saved" hidden>streak saved</p>
       <p class="solve-rate" id="solve-rate" hidden></p>

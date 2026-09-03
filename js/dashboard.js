@@ -328,6 +328,93 @@ function renderCohorts(rows) {
     .join('');
 }
 
+const MODE_NAMES = {
+  endless: 'Mate in One Endless',
+  elo: 'Guess the Elo',
+  judge: 'Blunder or Brilliant',
+  duel: 'Puzzle Duel',
+};
+
+/**
+ * Per-mode starts, completions and median headline number.
+ *
+ * A mode nobody has opened still gets a row, showing zeros. Hiding it would
+ * make "we shipped four modes and one is dead" invisible, which is exactly the
+ * thing this table exists to surface.
+ */
+function renderModes(rows, available = true) {
+  // A missing node is the one thing that would throw identically inside the
+  // caller's fallback, so it is handled here rather than there.
+  const host = $('mode-rows');
+  if (!host) return;
+
+  // Not installed is not the same as nobody played. Draw the four modes with
+  // dashes so the table still looks deliberate, and let the note say why.
+  if (available === false) {
+    host.innerHTML = Object.entries(MODE_NAMES).map(([, name]) => `
+      <tr>
+        <td>${name}</td>
+        <td class="num"><span class="none">—</span></td>
+        <td class="num"><span class="none">—</span></td>
+        <td class="num"><span class="none">—</span></td>
+        <td class="num"><span class="none">—</span></td>
+      </tr>`).join('');
+    return;
+  }
+
+  const list = Array.isArray(rows) ? rows : [];
+  host.innerHTML = list.map((row) => {
+    const starts = Number(row.starts || 0);
+    const done = Number(row.completions || 0);
+    const median = row.median_headline;
+    const shown = median === null || median === undefined
+      ? '<span class="none">—</span>'
+      : row.headline_unit === 'seconds'
+        ? `${Math.floor(median / 60)}:${String(Math.round(median % 60)).padStart(2, '0')}`
+        : nf.format(Number(median));
+    return `
+      <tr>
+        <td>${MODE_NAMES[row.mode] || row.mode}</td>
+        <td class="num">${nf.format(starts)}</td>
+        <td class="num">${nf.format(done)}</td>
+        <td class="num">${starts ? `${Number(row.completion_rate).toFixed(1)}%`
+                                 : '<span class="none">—</span>'}</td>
+        <td class="num">${shown}</td>
+      </tr>`;
+  }).join('');
+}
+
+/**
+ * The one number the "Keep going" section exists to move: of everyone who has
+ * finished a daily puzzle, how many opened any other mode.
+ */
+function renderCrossover(crossover, available = true) {
+  const value = $('crossover');
+  const note = $('crossover-note');
+  if (!value || !note) return;
+
+  if (available === false) {
+    value.textContent = '—';
+    note.textContent =
+      'Mode analytics are not installed on this database — run '
+      + 'supabase/migrations/003_mode_events.sql. The daily numbers above are unaffected.';
+    return;
+  }
+
+  const c = crossover || {};
+  const finishers = Number(c.daily_finishers || 0);
+  const crossed = Number(c.also_played_mode || 0);
+
+  if (!finishers) {
+    value.textContent = '—';
+    note.textContent = 'No daily finishers yet.';
+    return;
+  }
+  value.textContent = `${Number(c.crossover_rate || 0).toFixed(1)}%`;
+  note.textContent =
+    `${nf.format(crossed)} of ${nf.format(finishers)} daily finishers have opened a mode.`;
+}
+
 /* ----------------------------------------------------------------- render */
 
 function render(data) {
@@ -359,6 +446,33 @@ function render(data) {
   drawBuckets('c-attempts', data.attempts, 'plays', { failLast: true, noun: 'play' });
   drawBuckets('c-streaks', data.streaks, 'players', { noun: 'player' });
   renderCohorts(data.retention);
+
+  /*
+   * The mode section is drawn last and behind a catch, because it is the
+   * newest part of the page and the only part whose data may not exist. The
+   * database now returns the daily numbers even when the mode analytics are
+   * missing (see 004_dashboard_failsoft.sql), and this is the second line of
+   * that same defence: whatever the payload turns out to look like, a fault in
+   * here must not stop the numbers above from being on screen.
+   *
+   * `modes_available` is absent entirely on a database where 003 has not been
+   * run — dm_dashboard() simply has no such key — so `!== false` is the right
+   * test rather than a truthiness check.
+   */
+  const modesAvailable = data.modes_available !== false && data.modes !== undefined;
+  try {
+    renderModes(data.modes, modesAvailable);
+    renderCrossover(data.crossover, modesAvailable);
+  } catch (err) {
+    console.error('dashboard: mode section failed to render —', err);
+    try {
+      renderModes([], false);
+      renderCrossover(null, false);
+    } catch {
+      // Even the fallback failed. The daily numbers are already painted, which
+      // is the whole point of doing this last; nothing further is worth trying.
+    }
+  }
 }
 
 /* ------------------------------------------------------------------- auth */

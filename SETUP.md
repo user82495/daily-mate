@@ -29,6 +29,61 @@ It is idempotent, so running it twice is harmless. It creates:
 If you have not already run `supabase/schema.sql` (the original analytics
 table), run that first — this migration does not replace it.
 
+Then run `supabase/migrations/003_mode_events.sql` the same way. It adds the
+game modes' analytics:
+
+| Object | What it is |
+|---|---|
+| `mode_events` | one row per mode event: `(player, mode, event, payload)` |
+| `dm_mode_summary` | per mode: starts, completions, completion rate, median score |
+| `dm_mode_crossover` | share of daily finishers who opened any other mode |
+
+It also replaces `dm_dashboard` with a version returning three extra keys:
+`modes`, `crossover` and `modes_available`. Running it before `002` will fail —
+`dm_dashboard` has to exist before it can be replaced.
+
+Then run `supabase/migrations/004_dashboard_failsoft.sql`. It carries the same
+`dm_dashboard` definition as 003, so the two converge and may be run in either
+order or re-run safely; 004 exists so a project that already has the earlier,
+fragile version can be brought forward without re-running all of 003.
+
+**What 004 is for.** The mode analytics used to share a fate with the daily
+numbers. `dm_dashboard` called `dm_mode_summary()` and `dm_mode_crossover()`
+inline, so if `mode_events` were missing — 003 not run, half-run, a grant
+missed, the table dropped — the whole function raised, `/api/dashboard-data`
+returned 502, and the dashboard lost *everything*: plays, players, retention,
+solve rates. A table feeding one section was holding the entire page hostage.
+
+Now the daily payload is built first and alone, and the two mode lookups run in
+their own exception blocks. Anything wrong there costs the mode section and
+nothing else, and `modes_available` says which happened so the page can show
+"not installed" rather than a confident 0%. Failures are also raised as Postgres
+warnings, so the reason is in the logs.
+
+You can therefore run 004 **before** 003 and the dashboard will work, showing
+the mode section as dashes until 003 lands.
+
+Mode events go to their own table rather than into `plays` because `plays` is
+keyed `(anon_id, puzzle_day)` — one row per player per day, by construction,
+with no mode column. Four runs of Endless in an evening is four events, and
+`plays` can hold at most one of them. The browser still talks only to
+`/api/mode-event`, still sends the same anonymous id, and still never touches
+Supabase directly.
+
+### Checking the daily numbers did not move
+
+Adding the modes replaced `dm_dashboard()`. Everything it returned before is
+supposed to be returned unchanged. To prove that against your own data:
+
+Supabase dashboard → **SQL Editor** → paste `supabase/checks/dashboard_parity.sql`
+→ **Run**.
+
+It rebuilds the pre-modes version of the function in `pg_temp`, runs both
+against the same live rows, and compares them key by key. It prints a row per
+key and then raises an exception if any pre-existing key differs, so it fails
+loudly rather than printing a table nobody reads. It reads only — nothing is
+written and nothing permanent is created.
+
 ### Nothing to configure in the Supabase dashboard
 
 No RLS policies to add, no anon-key settings to change. Row level security is
@@ -189,7 +244,7 @@ git push
 ```
 
 Bump `CACHE` in `sw.js` whenever a shipped file changes, or returning visitors
-keep the old version. It is at `dailymate-v15`.
+keep the old version. It is at `dailymate-v23`.
 
 ---
 

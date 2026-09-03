@@ -11,6 +11,9 @@ import { reportResult, fetchDayStats } from './analytics.js';
 import { completePuzzle, fetchPercentile } from './api.js';
 import { createResultCard } from './results.js';
 import { maybeOfferNotifications } from './push.js';
+import { startRouter, parseHash } from './router.js';
+import { createKeepGoing, createHeaderNav } from './modemenu.js';
+import { probeAvailability } from './modecatalog.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -220,6 +223,7 @@ function persist() {
 function openSheet() {
   ensureDayStats();
   renderSheet();
+  renderKeepGoing();
   $('sheet').hidden = false;
   requestAnimationFrame(() => $('sheet').classList.add('is-open'));
   startCountdown();
@@ -230,6 +234,26 @@ function closeSheet() {
   stopCountdown();
   setTimeout(() => { $('sheet').hidden = true; }, 220);
 }
+
+/**
+ * The results sheet belongs to the daily, but it does not live inside
+ * #daily-root — it is a fixed, full-viewport overlay parented to <body>, so
+ * hiding the daily's root does nothing to it.
+ *
+ * That made the main way into a mode unusable: finish the daily, tap a "Keep
+ * going" card, and the mode mounted correctly underneath a sheet that was still
+ * covering the entire screen. Every route into a mode has the same problem —
+ * the header nav, a typed #/endless, a shared link opened on a day already
+ * played — because the sheet also auto-opens at startup for a finished day.
+ *
+ * So the sheet is closed whenever the route is not the daily, on both the
+ * initial render and every hash change after it. Closing an already-closed
+ * sheet is a no-op, which is why this can be unconditional.
+ */
+function syncSheetToRoute() {
+  if (parseHash().route && !$('sheet').hidden) closeSheet();
+}
+window.addEventListener('hashchange', syncSheetToRoute);
 
 /* --------------------------------------------------------------- solve rate
  * "63% of players solved today's puzzle."
@@ -304,6 +328,22 @@ function renderHistogram() {
   }).join('');
 }
 
+/**
+ * The modes, under the share buttons — the main discovery surface.
+ *
+ * Async because a mode whose data is not deployed does not get a card, and
+ * that is only knowable once the availability probe has answered. The probe
+ * runs on idle right after first paint, so by the time anyone has finished a
+ * puzzle it long since resolved and this is a microtask. The slot is cleared
+ * first: on a deploy with no mode data at all, the correct "Keep going"
+ * section is no section.
+ */
+async function renderKeepGoing() {
+  const slot = $('keep-going-slot');
+  const section = await createKeepGoing();
+  slot.replaceChildren(...(section ? [section] : []));
+}
+
 /* ----------------------------------------------------------- the countdown */
 
 let countdownTimer = null;
@@ -350,8 +390,31 @@ if (today.state === 'playing') {
     seconds: Number.isFinite(today.seconds) ? today.seconds : null,
     explanation: puzzle.explanation || null,
   });
-  openSheet();
+  // A cold link straight to #/endless must not land under the daily's sheet.
+  if (!parseHash().route) openSheet();
 }
+
+/* -------------------------------------------------------------- the modes */
+
+// Which modes actually have their data deployed. Four HEAD requests, no
+// bodies, deferred to idle so they queue behind everything the daily needs.
+// Doing it here rather than when a menu is opened means the answer is already
+// waiting when the results sheet appears, and no card ever pops in late.
+const whenIdle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1200));
+whenIdle(() => { probeAvailability(); });
+
+// A small way in for someone who already did the daily. Deliberately not a
+// splash screen: the daily is what loads.
+document.querySelector('#daily-root .topbar-right')
+  ?.prepend(createHeaderNav());
+
+// Routing starts last. #/ is the daily and is already on screen, so this is a
+// no-op on the common path; a mode's code is only imported when its route is
+// actually entered.
+startRouter({
+  daily: $('daily-root'),
+  mode: $('mode-root'),
+});
 
 /* --------------------------------------------------------------- dev tools */
 

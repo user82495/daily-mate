@@ -41,11 +41,13 @@ export function createBoard(root, options = {}) {
   root.innerHTML = `
     <div class="board-squares" aria-hidden="true"></div>
     <div class="board-marks"></div>
+    <svg class="board-arrows" viewBox="0 0 8 8" aria-hidden="true"></svg>
     <div class="board-pieces"></div>
     <div class="board-promo" hidden></div>
   `;
   const squaresEl = root.querySelector('.board-squares');
   const marksEl = root.querySelector('.board-marks');
+  const arrowsEl = root.querySelector('.board-arrows');
   const piecesEl = root.querySelector('.board-pieces');
   const promoEl = root.querySelector('.board-promo');
 
@@ -140,6 +142,7 @@ export function createBoard(root, options = {}) {
   /** Rebuild the whole position from a FEN. Instant, no animation. */
   function setPosition(fen) {
     clearMarks();
+    clearArrows();
     cancelSelection();
     pieces.clear();
     piecesEl.replaceChildren();
@@ -253,6 +256,64 @@ export function createBoard(root, options = {}) {
         if (bySq.size === 0) marks.delete(sq);
       }
     }, 1200);
+  }
+
+  /* ---------------------------------------------------------------- arrows */
+
+  /**
+   * Draw an arrow between two squares.
+   *
+   * Blunder or Brilliant shows the move that was played rather than letting the
+   * player make it, and an arrow is the only honest way to say "this move" about
+   * a position nobody is allowed to touch. Drawn in board coordinates on an 8x8
+   * viewBox so it scales with the board and follows setOrientation for free.
+   */
+  function arrow(from, to, kind = 'played') {
+    const a = coords(from);
+    const b = coords(to);
+    const x1 = a.col + 0.5;
+    const y1 = a.row + 0.5;
+    const x2 = b.col + 0.5;
+    const y2 = b.row + 0.5;
+
+    // Stop short of the centre so the head sits on the edge of the target
+    // square rather than covering the piece standing there.
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const back = 0.32;
+    const ex = x2 - (dx / len) * back;
+    const ey = y2 - (dy / len) * back;
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', `arrow arrow-${kind}`);
+
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', ex);
+    line.setAttribute('y2', ey);
+    g.append(line);
+
+    const head = document.createElementNS(ns, 'polygon');
+    const angle = Math.atan2(dy, dx);
+    const w = 0.17;
+    const h = 0.3;
+    const points = [
+      [x2 - (dx / len) * 0.06, y2 - (dy / len) * 0.06],
+      [ex - Math.cos(angle - Math.PI / 2) * w, ey - Math.sin(angle - Math.PI / 2) * w],
+      [ex + Math.cos(angle - Math.PI / 2) * w, ey + Math.sin(angle - Math.PI / 2) * w],
+    ].map(([x, y]) => `${x},${y}`).join(' ');
+    head.setAttribute('points', points);
+    g.append(head);
+
+    arrowsEl.append(g);
+    return g;
+  }
+
+  function clearArrows() {
+    arrowsEl.replaceChildren();
   }
 
   /* ----------------------------------------------------------------- input */
@@ -465,12 +526,15 @@ export function createBoard(root, options = {}) {
     mark,
     clearMarks,
     flash,
+    arrow,
+    clearArrows,
     get orientation() {
       return orientation;
     },
     setOrientation(next, fen) {
       if (next === orientation) return;
       orientation = next;
+      clearArrows();          // arrows are drawn in board coordinates
       buildSquares();
       for (const [sq, rec] of pieces) place(rec.el, sq);
       for (const [sq, bySq] of marks) for (const el of bySq.values()) place(el, sq);
