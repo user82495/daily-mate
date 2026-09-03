@@ -877,3 +877,349 @@ button {
   border-bottom: 1px solid var(--line);
 }
 .stats-link:hover { color: var(--text); }
+
+/* =========================================================================
+   Modes — shared chrome
+   Everything here reuses the existing tokens and the daily's own classes
+   (.result-card, .result-btn, .board-wrap) so a mode cannot drift away from
+   the app it lives in.
+   ========================================================================= */
+
+.mode-root { padding-bottom: 24px; }
+body.in-mode { overflow-x: hidden; }
+
+.mode-stage { display: flex; flex-direction: column; }
+
+.mode-prompt {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 10px;
+}
+
+.mode-tray {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0 0;
+}
+
+.mode-counter {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-num);
+}
+.mode-counter span:first-child { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; }
+.mode-counter-label {
+  font-family: var(--font);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* --- loading + failure --------------------------------------------------- */
+
+.mode-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 0;
+}
+.skeleton-board {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  background: var(--surface);
+  /* A slow sweep rather than a pulse: it is on screen for a few hundred
+     milliseconds and should not draw attention to itself. */
+  background-image: linear-gradient(100deg,
+    transparent 20%, rgb(255 255 255 / 0.04) 40%, transparent 60%);
+  background-size: 220% 100%;
+  animation: skeleton-sweep 1.6s linear infinite;
+}
+@keyframes skeleton-sweep { to { background-position: -220% 0; } }
+.skeleton-note { margin: 0; font-size: 13px; color: var(--text-faint); }
+
+/* --- the shared result screen -------------------------------------------- */
+
+.mode-result { margin-top: 20px; }
+.mode-result-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.mode-headline {
+  margin: 6px 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.mode-headline-value {
+  font-family: var(--font-num);
+  font-size: 46px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.mode-headline-label { font-size: 13px; color: var(--text-dim); }
+.result-meta.is-new { color: var(--accent); font-weight: 650; }
+
+/* =========================================================================
+   Keep going — the daily's results screen
+   ========================================================================= */
+
+.keep-going { margin-top: 22px; }
+
+.mode-cards { display: flex; flex-direction: column; gap: 8px; }
+
+.mode-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-decoration: none;
+  color: inherit;
+  /* One-handed portrait: comfortably past the 44px target floor. */
+  min-height: 56px;
+  transition: background 120ms linear, border-color 120ms linear;
+}
+.mode-card:hover { background: var(--line); border-color: var(--text-faint); }
+.mode-card:active { transform: scale(0.995); }
+
+.mode-card-name { font-size: 14.5px; font-weight: 600; }
+.mode-card-blurb {
+  grid-column: 1;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.mode-card-best {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* --- header control ------------------------------------------------------ */
+
+.mode-nav { position: relative; }
+.mode-nav > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.mode-nav > summary::-webkit-details-marker { display: none; }
+
+.mode-nav-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 208px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.5);
+}
+.mode-nav-menu a {
+  padding: 11px 10px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  color: var(--text);
+  text-decoration: none;
+}
+.mode-nav-menu a:hover { background: var(--line); }
+
+/* =========================================================================
+   Board additions — arrows, and the wrong-move mark
+   ========================================================================= */
+
+.board-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+}
+.board-arrows .arrow line {
+  stroke: var(--accent);
+  stroke-width: 0.13;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+.board-arrows .arrow polygon { fill: var(--accent); opacity: 0.9; }
+
+.mark-wrong {
+  background: color-mix(in srgb, var(--fail) 34%, transparent);
+  box-shadow: inset 0 0 0 3px var(--fail);
+}
+
+.message.is-wrong { color: var(--fail); }
+
+/* =========================================================================
+   Blunder or Brilliant
+   ========================================================================= */
+
+.judge-clock { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.judge-clock.is-low { color: var(--fail); }
+
+.judge-buttons { display: flex; gap: 10px; width: 100%; }
+.judge-btn {
+  flex: 1;
+  min-height: 52px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  transition: filter 120ms linear, transform 120ms var(--ease);
+}
+.judge-btn:active { transform: scale(0.97); }
+.judge-btn.is-blunder { border-color: color-mix(in srgb, var(--fail) 55%, transparent); }
+.judge-btn.is-brilliant { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+.judge-verdict {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  min-height: 20px;
+}
+
+/* =========================================================================
+   Guess the Elo
+   ========================================================================= */
+
+.elo-controls { display: flex; align-items: center; gap: 8px; }
+.elo-ctrl {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+}
+.elo-ctrl:hover { background: var(--line); }
+.elo-ply {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin-left: 4px;
+}
+
+.elo-guess { display: block; width: 100%; }
+.elo-guess-value {
+  display: block;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 34px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.elo-guess input[type="range"] {
+  width: 100%;
+  margin: 10px 0 2px;
+  accent-color: var(--accent);
+  /* A slider is the one control here that must be usable with a thumb. */
+  height: 44px;
+}
+.elo-guess-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-style: normal;
+}
+.elo-guess-ends i { font-style: normal; }
+.elo-submit { width: 100%; }
+
+.elo-reveal { width: 100%; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.elo-reveal-line {
+  margin: 0;
+  display: flex;
+  gap: 18px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.elo-reveal-avg { margin: 0; font-size: 13.5px; color: var(--text-dim); }
+.elo-reveal-avg strong { color: var(--text); }
+.elo-reveal-points {
+  margin: 2px 0 6px;
+  font-family: var(--font-num);
+  font-size: 38px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.elo-reveal-points span { font-size: 15px; color: var(--text-faint); font-weight: 400; }
+
+/* =========================================================================
+   Puzzle Duel
+   ========================================================================= */
+
+.duel-clock { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+
+.duel-pips { margin: 0; display: flex; gap: 8px; }
+.duel-pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+}
+.duel-pip.is-done { background: var(--accent); border-color: var(--accent); }
+.duel-pip.is-live { border-color: var(--text-dim); }
+
+.duel-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  text-align: center;
+  padding: 34px 8px;
+}
+.duel-intro-kicker {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.duel-intro-target { margin: 0; font-size: 24px; font-weight: 600; }
+.duel-intro-target strong {
+  font-family: var(--font-num);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.duel-intro-note {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-width: 30ch;
+}
+.duel-intro .result-btn { width: 100%; max-width: 260px; }

@@ -29,6 +29,26 @@ It is idempotent, so running it twice is harmless. It creates:
 If you have not already run `supabase/schema.sql` (the original analytics
 table), run that first — this migration does not replace it.
 
+Then run `supabase/migrations/003_mode_events.sql` the same way. It adds the
+game modes' analytics:
+
+| Object | What it is |
+|---|---|
+| `mode_events` | one row per mode event: `(player, mode, event, payload)` |
+| `dm_mode_summary` | per mode: starts, completions, completion rate, median score |
+| `dm_mode_crossover` | share of daily finishers who opened any other mode |
+
+It also replaces `dm_dashboard` with a version returning two extra keys,
+`modes` and `crossover`. Running it before `002` will fail — `dm_dashboard`
+has to exist before it can be replaced.
+
+Mode events go to their own table rather than into `plays` because `plays` is
+keyed `(anon_id, puzzle_day)` — one row per player per day, by construction,
+with no mode column. Four runs of Endless in an evening is four events, and
+`plays` can hold at most one of them. The browser still talks only to
+`/api/mode-event`, still sends the same anonymous id, and still never touches
+Supabase directly.
+
 ### Nothing to configure in the Supabase dashboard
 
 No RLS policies to add, no anon-key settings to change. Row level security is
@@ -189,7 +209,7 @@ git push
 ```
 
 Bump `CACHE` in `sw.js` whenever a shipped file changes, or returning visitors
-keep the old version. It is at `dailymate-v15`.
+keep the old version. It is at `dailymate-v21`.
 
 ---
 

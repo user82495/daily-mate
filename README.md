@@ -226,6 +226,68 @@ The current set is 2 × mate-in-1, 16 × mate-in-2, 10 × mate-in-3 and
 2 × mate-in-4, arranged so the long ones are spread out. Same CSV and same seed
 produce a byte-identical file.
 
+## The other four modes
+
+The daily is the app; these sit behind it and are reached from the "Keep going"
+cards under the daily's result card, or the grid icon in the header. Each is a
+hash route, and each loads its own code and data only when it is first entered
+— the daily route fetches no mode code beyond the small menu, and no mode data
+at all.
+
+| Route | Mode | Data file |
+|---|---|---|
+| `#/endless` | Mate in One Endless — sudden death, one move each | `data/mate1.json` |
+| `#/elo` | Guess the Elo — watch a game, rate the players | `data/games.json` |
+| `#/judge` | Blunder or Brilliant — 60 seconds of calls | `data/evals.json` |
+| `#/duel` | Puzzle Duel — 5 against the clock, challengeable | `data/duel.json` |
+
+A duel challenge is a link, not a record: `#/duel?c=<payload>` carries the five
+puzzle ids and the challenger's time base64url-encoded in the URL itself. There
+is no server, no account and no row in any table behind it. A payload that does
+not decode falls back to an ordinary random duel with no challenge framing,
+which is also what a truncated or mangled link does.
+
+Guess the Elo shows everyone the same first game each day, seeded by the date,
+so that a score out of 500 compares two people rather than two different sets
+of positions.
+
+### Building the mode data
+
+`data/mate1.json` and `data/duel.json` are committed and come from the same
+puzzle CSV as the daily:
+
+```bash
+python3 scripts/build_mate1.py lichess_db_puzzle.csv
+```
+
+```bash
+python3 scripts/build_duel.py lichess_db_puzzle.csv
+```
+
+`data/games.json` and `data/evals.json` are **not committed and not yet
+built** — they need a monthly Lichess game dump rather than the puzzle CSV, and
+those are tens of gigabytes. Until they exist, `#/elo` and `#/judge` show
+"Could not load this mode" with a retry, which is the intended behaviour for
+absent data rather than a crash. To build them, download a monthly PGN from
+<https://database.lichess.org/> and run:
+
+```bash
+python3 scripts/build_games.py lichess_db_standard_rated_2026-01.pgn.zst
+```
+
+```bash
+python3 scripts/build_evals.py lichess_db_standard_rated_2026-01.pgn.zst
+```
+
+`build_evals.py` reads the `%eval` annotations Lichess ships on analysed games.
+One of the three conditions for "brilliant" — that no non-sacrificial move
+scores within 100cp — cannot be answered from those annotations, because
+`%eval` records a single number per position: the evaluation after the move
+actually played, with nothing about the alternatives. Pass `--engine
+/path/to/stockfish` to evaluate that condition properly; without it the script
+applies the other two and says so in its summary. `scripts/README.md` has the
+detail.
+
 ## Daily rollover
 
 Puzzle #1 is 9 August 2026; the puzzle changes at **local** midnight. Which one
@@ -253,7 +315,7 @@ and the solve-rate line stays hidden.
 
 The service worker is cache-first, so returning visitors keep the old version
 until the cache name changes. **Bump `CACHE` in `sw.js` on every deploy that
-changes a shipped file** — it's at `dailymate-v15` now. Anything under `/api/`
+changes a shipped file** — it's at `dailymate-v21` now. Anything under `/api/`
 is excluded from it deliberately: the cache lookup ignores query strings, so a
 cached `day-stats` response would be served for every other day too.
 

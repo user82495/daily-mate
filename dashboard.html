@@ -132,6 +132,32 @@
         </div>
       </section>
 
+      <section class="card">
+        <h2 class="card-title">Game modes</h2>
+        <p class="card-note">
+          Starts and completions per mode, and the median headline number — the
+          streak for Endless, points out of 500 for Guess the Elo, correct calls
+          for Judge, seconds for Duel. An abandoned run counts as a start and not
+          a completion, which is what makes the rate worth reading.
+        </p>
+        <p class="crossover" id="crossover">—</p>
+        <p class="crossover-note" id="crossover-note"></p>
+        <div class="table-wrap">
+          <table class="cohorts">
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th class="num">Starts</th>
+                <th class="num">Completions</th>
+                <th class="num">Completion rate</th>
+                <th class="num">Median</th>
+              </tr>
+            </thead>
+            <tbody id="mode-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
 
     <p class="dash-msg" id="dash-msg" role="status" aria-live="polite"></p>

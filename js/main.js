@@ -11,6 +11,8 @@ import { reportResult, fetchDayStats } from './analytics.js';
 import { completePuzzle, fetchPercentile } from './api.js';
 import { createResultCard } from './results.js';
 import { maybeOfferNotifications } from './push.js';
+import { startRouter } from './router.js';
+import { createKeepGoing, createHeaderNav } from './modemenu.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -220,6 +222,7 @@ function persist() {
 function openSheet() {
   ensureDayStats();
   renderSheet();
+  renderKeepGoing();
   $('sheet').hidden = false;
   requestAnimationFrame(() => $('sheet').classList.add('is-open'));
   startCountdown();
@@ -304,6 +307,11 @@ function renderHistogram() {
   }).join('');
 }
 
+/** The four modes, under the share buttons — the main discovery surface. */
+function renderKeepGoing() {
+  $('keep-going-slot').replaceChildren(createKeepGoing());
+}
+
 /* ----------------------------------------------------------- the countdown */
 
 let countdownTimer = null;
@@ -352,6 +360,21 @@ if (today.state === 'playing') {
   });
   openSheet();
 }
+
+/* -------------------------------------------------------------- the modes */
+
+// A small way in for someone who already did the daily. Deliberately not a
+// splash screen: the daily is what loads.
+document.querySelector('#daily-root .topbar-right')
+  ?.prepend(createHeaderNav());
+
+// Routing starts last. #/ is the daily and is already on screen, so this is a
+// no-op on the common path; a mode's code is only imported when its route is
+// actually entered.
+startRouter({
+  daily: $('daily-root'),
+  mode: $('mode-root'),
+});
 
 /* --------------------------------------------------------------- dev tools */
 

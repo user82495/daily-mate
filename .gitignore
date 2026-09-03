@@ -4,6 +4,13 @@
 lichess_db_puzzle.csv
 lichess_db_puzzle.csv.zst
 
+# Lichess monthly game dumps, for scripts/build_games.py and build_evals.py.
+# Tens of gigabytes each. The generated data/games.json and data/evals.json
+# are what get committed, never the source.
+lichess_db_standard_rated_*.pgn
+lichess_db_standard_rated_*.pgn.zst
+*.pgn.zst
+
 node_modules/
 .DS_Store
 
@@ -22,3 +29,7 @@ videos/
 # belt and braces, so a moved or copied config still cannot slip through.
 local-dashboard/
 **/local-dashboard-config.js
+
+# Python bytecode from the data build scripts
+__pycache__/
+*.pyc

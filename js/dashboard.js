@@ -328,6 +328,62 @@ function renderCohorts(rows) {
     .join('');
 }
 
+const MODE_NAMES = {
+  endless: 'Mate in One Endless',
+  elo: 'Guess the Elo',
+  judge: 'Blunder or Brilliant',
+  duel: 'Puzzle Duel',
+};
+
+/**
+ * Per-mode starts, completions and median headline number.
+ *
+ * A mode nobody has opened still gets a row, showing zeros. Hiding it would
+ * make "we shipped four modes and one is dead" invisible, which is exactly the
+ * thing this table exists to surface.
+ */
+function renderModes(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  $('mode-rows').innerHTML = list.map((row) => {
+    const starts = Number(row.starts || 0);
+    const done = Number(row.completions || 0);
+    const median = row.median_headline;
+    const shown = median === null || median === undefined
+      ? '<span class="none">—</span>'
+      : row.headline_unit === 'seconds'
+        ? `${Math.floor(median / 60)}:${String(Math.round(median % 60)).padStart(2, '0')}`
+        : nf.format(Number(median));
+    return `
+      <tr>
+        <td>${MODE_NAMES[row.mode] || row.mode}</td>
+        <td class="num">${nf.format(starts)}</td>
+        <td class="num">${nf.format(done)}</td>
+        <td class="num">${starts ? `${Number(row.completion_rate).toFixed(1)}%`
+                                 : '<span class="none">—</span>'}</td>
+        <td class="num">${shown}</td>
+      </tr>`;
+  }).join('');
+}
+
+/**
+ * The one number the "Keep going" section exists to move: of everyone who has
+ * finished a daily puzzle, how many opened any other mode.
+ */
+function renderCrossover(crossover) {
+  const c = crossover || {};
+  const finishers = Number(c.daily_finishers || 0);
+  const crossed = Number(c.also_played_mode || 0);
+
+  if (!finishers) {
+    $('crossover').textContent = '—';
+    $('crossover-note').textContent = 'No daily finishers yet.';
+    return;
+  }
+  $('crossover').textContent = `${Number(c.crossover_rate || 0).toFixed(1)}%`;
+  $('crossover-note').textContent =
+    `${nf.format(crossed)} of ${nf.format(finishers)} daily finishers have opened a mode.`;
+}
+
 /* ----------------------------------------------------------------- render */
 
 function render(data) {
@@ -359,6 +415,8 @@ function render(data) {
   drawBuckets('c-attempts', data.attempts, 'plays', { failLast: true, noun: 'play' });
   drawBuckets('c-streaks', data.streaks, 'players', { noun: 'player' });
   renderCohorts(data.retention);
+  renderModes(data.modes);
+  renderCrossover(data.crossover);
 }
 
 /* ------------------------------------------------------------------- auth */

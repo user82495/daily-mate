@@ -13,7 +13,7 @@
  * activate, and clients pick the new one up on their next load.
  */
 
-const CACHE = 'dailymate-v15';
+const CACHE = 'dailymate-v21';
 
 /**
  * Everything the private dashboard is made of. None of it belongs in the app's
@@ -41,6 +41,25 @@ const ASSETS = [
   'js/push.js',
   'stats.html',
   'js/stats-page.js',
+
+  // The modes. router/modemenu/profile are on the daily's own path — main.js
+  // imports them — so they must be here or the daily breaks offline. The rest
+  // are lazily imported, and precached anyway because they are small and a mode
+  // that only works online is a mode that fails on a train.
+  'js/router.js',
+  'js/modemenu.js',
+  'js/profile.js',
+  'js/track.js',
+  'js/dataloader.js',
+  'js/resultcard.js',
+  'js/modes/endless.js',
+  'js/modes/elo.js',
+  'js/modes/judge.js',
+  'js/modes/duel.js',
+  // data/*.json is deliberately NOT precached: half a megabyte would be paid by
+  // every visitor at install, including the majority who only ever play the
+  // daily. The runtime caching below picks each file up on first use instead,
+  // so a mode works offline from the second visit onward.
   'privacy.html',
   'prose.css',
   'vendor/chess.js',
