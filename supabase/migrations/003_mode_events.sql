@@ -107,16 +107,21 @@ as $$
     group by m.mode
   )
   select
-    mode,
-    starts,
-    completions,
-    case when starts > 0
-         then round(100.0 * completions / starts, 1)
+    per_mode.mode,
+    per_mode.starts,
+    per_mode.completions,
+    case when per_mode.starts > 0
+         then round(100.0 * per_mode.completions / per_mode.starts, 1)
          else 0 end,
-    round(median_headline, 1),
-    case mode when 'duel' then 'seconds' else 'points' end
+    -- percentile_cont has no numeric signature: the sort expression is cast up
+    -- to double precision and the result comes back double precision. Two-arg
+    -- round is round(numeric, integer) only, so without this cast the body does
+    -- not resolve — and a `language sql` body is checked when the function is
+    -- created, so 003 would fail on CREATE rather than at query time.
+    round(per_mode.median_headline::numeric, 1),
+    case per_mode.mode when 'duel' then 'seconds' else 'points' end
   from per_mode
-  order by starts desc, mode;
+  order by per_mode.starts desc, per_mode.mode;
 $$;
 
 
